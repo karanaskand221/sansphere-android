@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // REQUIRED: Provides kIsWeb for platform checking
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/marketplace_feed.dart';
@@ -19,12 +20,30 @@ List<String> purchasedResourceTitles = [];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Explicit project credential configuration for Web App targets
+  const FirebaseOptions webFirebaseOptions = FirebaseOptions(
+    apiKey: "AIzaSyB64J31BsWmjtltHKAX1C7pAyAi_7hnM5I",
+    authDomain: "gen-lang-client-0227443307.firebaseapp.com",
+    projectId: "gen-lang-client-0227443307",
+    storageBucket: "gen-lang-client-0227443307.firebasestorage.app",
+    messagingSenderId: "1070172783321",
+    appId: "1:1070172783321:web:aed160f259e7195ffb74c8",
+  );
+
   try {
-    await Firebase.initializeApp(); 
+    if (kIsWeb) {
+      // Web uses explicit configuration options
+      await Firebase.initializeApp(options: webFirebaseOptions); 
+    } else {
+      // Android & iOS automatically read their native asset setup (google-services.json)
+      await Firebase.initializeApp();
+    }
     isFirebaseReady = true;
   } catch (e) {
-    debugPrint("Firebase running in UI Preview Mode.");
+    debugPrint("Firebase initialization failed. Falling back to UI Preview Mode: $e");
   }
+  
   runApp(const SansphereApp());
 }
 
@@ -97,7 +116,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             const Text(
               "SANSPHERE",
               style: TextStyle(
-                fontWeight: FontWeight.w900, // FIXED: Changed from FontWeight.black
+                fontWeight: FontWeight.w900,
                 color: Colors.blueAccent,
                 letterSpacing: 1.2,
                 fontSize: 20,
