@@ -1,115 +1,64 @@
 import 'package:flutter/material.dart';
-import 'marketplace_feed.dart';
 
-class SocialReel {
-  final String authorName;
-  final String description;
-  final String attachedResourceTitle;
-  final Color backgroundTheme;
-  SocialReel({required this.authorName, required this.description, required this.attachedResourceTitle, required this.backgroundTheme});
+class ReelItem {
+  final String title;
+  final String type;
+  final String college;
+  final double price;
+  final String author;
+
+  ReelItem({
+    required this.title,
+    required this.type,
+    required this.college,
+    required this.price,
+    required this.author,
+  });
 }
 
 class ReelsScreen extends StatefulWidget {
-  const ReelsScreen({super.key});
+  const ReelsScreen({Key? key}) : super(key: key);
+
   @override
   State<ReelsScreen> createState() => _ReelsScreenState();
 }
 
 class _ReelsScreenState extends State<ReelsScreen> {
-  final List<SocialReel> dummyReels = [
-    SocialReel(authorName: "Karan", description: "IMP Questions for Math Unit 3! Passed with this last night 🔥", attachedResourceTitle: "Engineering Math - III", backgroundTheme: Colors.indigo),
-    SocialReel(authorName: "Admin", description: "Data Structures complete premium question banks attached.", attachedResourceTitle: "Data Structures PYQ 2025", backgroundTheme: Colors.blueGrey),
+  final List<ReelItem> localReels = [
+    ReelItem(title: "DBMS Complete Notes", type: "Notes", college: "SITRC", price: 0.0, author: "Karan Askand"),
+    ReelItem(title: "Java OOPs Cheat Sheet", type: "Notes", college: "SITRC", price: 0.0, author: "Admin"),
+    ReelItem(title: "Compiler Design Guide", type: "PYQs", college: "SITRC", price: 0.0, author: "Rahul M."),
   ];
-
-  void _showAttachedAsset(String title) {
-    // Find item details from our live market list
-    Resource item = globalResources.firstWhere((r) => r.title == title, 
-        orElse: () => Resource(title: title, type: "Notes", college: "SITRC", price: 10.0, author: "System"));
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Chip(label: Text(item.type), backgroundColor: Colors.blueAccent.withOpacity(0.15)),
-                Text("₹${item.price.toInt()}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueAccent)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(item.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text("College: ${item.college} • Creator: ${item.author}", style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48), backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Redirected to main Vault panel to purchase item.")));
-              },
-              child: const Text("View File inside Vault Marketplace"),
-            )
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text("Academic Reels", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
       body: PageView.builder(
         scrollDirection: Axis.vertical,
-        itemCount: dummyReels.length,
-        itemBuilder: (context, i) {
-          final reel = dummyReels[i];
+        itemCount: localReels.length,
+        itemBuilder: (context, index) {
+          final item = localReels[index];
           return Container(
-            color: reel.backgroundTheme,
-            child: Stack(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade900),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Simulated Video Content Graphic
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.play_circle_fill, size: 80, color: Colors.white60),
-                      const SizedBox(height: 12),
-                      Text("[ Preview Clip by @${reel.authorName} ]", style: const TextStyle(color: Colors.white70)),
-                    ],
-                  ),
-                ),
-                // Author description card alignment
-                Positioned(
-                  bottom: 40,
-                  left: 16,
-                  right: 90,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("@${reel.authorName}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 6),
-                      Text(reel.description, style: const TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
-                // Floating link trigger configuration
-                Positioned(
-                  bottom: 40,
-                  right: 16,
-                  child: FloatingActionButton.extended(
-                    heroTag: "btn_$i",
-                    backgroundColor: Colors.amberAccent,
-                    foregroundColor: Colors.black,
-                    icon: const Icon(Icons.cloud_download),
-                    label: const Text("📥 View File"),
-                    onPressed: () => _showAttachedAsset(reel.attachedResourceTitle),
-                  ),
-                )
+                Chip(label: Text(item.type)),
+                const SizedBox(height: 10),
+                Text(item.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 10),
+                Text("College: ${item.college} • Creator: ${item.author}", style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 5),
+                Text("Price: ₹${item.price}", style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
           );

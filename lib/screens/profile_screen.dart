@@ -1,3 +1,4 @@
+import '../global_state.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 
@@ -10,7 +11,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
-    double myEarnings = creatorEarnings["User"] ?? 0.0;
+    double myEarnings = GlobalState.creatorEarnings["User"] ?? 0.0;
 
     return Scaffold(
       appBar: AppBar(title: const Text("SANSPHERE Wallet & Profile", style: TextStyle(fontWeight: FontWeight.bold))),
@@ -53,10 +54,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisSpacing: 12,
               childAspectRatio: 1.3,
               children: [
-                _buildWalletCard("Available Cash", "₹${currentUserWallet.toStringAsFixed(2)}", Icons.account_balance_wallet, Colors.teal),
+                _buildWalletCard("Available Cash", "₹${GlobalState.currentUserWallet.toStringAsFixed(2)}", Icons.account_balance_wallet, Colors.teal),
                 _buildWalletCard("My Document Sales", "₹${myEarnings.toStringAsFixed(2)}", Icons.monetization_on, Colors.purple),
-                _buildWalletCard("Unlocked Assets", "${purchasedResourceTitles.length} Files", Icons.folder_shared, Colors.orange),
-                _buildWalletCard("Platform Processing Pool", "₹${platformProcessingPool.toStringAsFixed(2)}", Icons.admin_panel_settings, Colors.blueGrey),
+                _buildWalletCard("Unlocked Assets", "${GlobalState.purchasedResourceTitles.length} Files", Icons.folder_shared, Colors.orange),
+                _buildWalletCard("Platform Processing Pool", "₹${GlobalState.platformProcessingPool.toStringAsFixed(2)}", Icons.admin_panel_settings, Colors.blueGrey),
               ],
             ),
             

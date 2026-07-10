@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1070172783321",
+    "project_id": "gen-lang-client-0227443307",
+    "storage_bucket": "gen-lang-client-0227443307.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1070172783321:android:7580f33ec2dd10e0fb74c8",
+        "android_client_info": {
+          "package_name": "com.example.sansphere_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwmf5jsIwxeczBUePW1iWSt9Xodor06RU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

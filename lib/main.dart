@@ -1,27 +1,21 @@
+import "package:cloud_firestore/cloud_firestore.dart";
+import "package:firebase_storage/firebase_storage.dart";
+import "package:firebase_auth/firebase_auth.dart";
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // REQUIRED: Provides kIsWeb for platform checking
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/marketplace_feed.dart';
 import 'screens/reels_screen.dart';
 import 'screens/chat_list_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 
-// --- Shared Live State for MVP Demo ---
+// --- Shared Live State ---
 bool isFirebaseReady = false;
-double currentUserWallet = 500.0; 
-double platformProcessingPool = 0.0;
-Map<String, double> creatorEarnings = {
-  "Karan": 65.0,
-  "Admin": 32.5,
-};
-List<String> purchasedResourceTitles = [];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Explicit project credential configuration for Web App targets
+
   const FirebaseOptions webFirebaseOptions = FirebaseOptions(
     apiKey: "AIzaSyB64J31BsWmjtltHKAX1C7pAyAi_7hnM5I",
     authDomain: "gen-lang-client-0227443307.firebaseapp.com",
@@ -32,32 +26,31 @@ void main() async {
   );
 
   try {
+    await Firebase.initializeApp(options: webFirebaseOptions);
+
     if (kIsWeb) {
-      // Web uses explicit configuration options
-      await Firebase.initializeApp(options: webFirebaseOptions); 
-    } else {
-      // Android & iOS automatically read their native asset setup (google-services.json)
-      await Firebase.initializeApp();
+      // Standard localhost connection. 
+      // The Codespace container forwards these to the internal emulators.
+      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+      await FirebaseStorage.instance.useStorageEmulator('localhost', 9199);
+      debugPrint("Connected to Emulators on localhost");
     }
     isFirebaseReady = true;
   } catch (e) {
-    debugPrint("Firebase initialization failed. Falling back to UI Preview Mode: $e");
+    debugPrint("Firebase initialization failed: $e");
   }
-  
+
   runApp(const SansphereApp());
 }
 
 class SansphereApp extends StatelessWidget {
   const SansphereApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.blueAccent, 
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorSchemeSeed: Colors.blueAccent, useMaterial3: true),
       home: isFirebaseReady
           ? StreamBuilder<User?>(
               stream: FirebaseAuth.instance.authStateChanges(),
@@ -65,16 +58,15 @@ class SansphereApp extends StatelessWidget {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Scaffold(body: Center(child: CircularProgressIndicator()));
                 }
-                if (snapshot.hasData) {
-                  return const MainNavigationScreen();
-                }
-                return LoginScreen(); 
+                return snapshot.hasData ? const MainNavigationScreen() : LoginScreen();
               },
             )
           : LoginScreen(),
     );
   }
 }
+
+// ... (Keep your MainNavigationScreen and other classes exactly as they were)
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
