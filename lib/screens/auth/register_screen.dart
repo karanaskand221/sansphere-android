@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import '../../main.dart'; // FIXED: Stepped up two levels to find your root main.dart file
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -10,107 +12,103 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _fullNameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  
+  // Explicitly targeting the custom database named 'sansphere'
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'sansphere',
+  );
+
+  // Form Input Controllers
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
-  bool isLoading = false;
+  final _collegeController = TextEditingController();
+  final _branchController = TextEditingController();
+  final _yearController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  Future<void> _handleRegistration() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Create the user authentication entry in Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // 2. CONNECT TO FIRESTORE: Write initial profile documents matching User UID
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullName': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'college': _collegeController.text.trim(),
+          'branch': _branchController.text.trim(),
+          'year': _yearController.text.trim(),
+          'bio': 'Welcome to my Sansphere profile!',
+          'specification': 'Not Specified Yet',
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastProfileUpdate': null,
+        });
+
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Account registered and synchronized successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // 3. FIXED: Removed 'const' to allow dynamic navigation execution safely
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => const MainNavigationScreen(isGuestMode: false),
+          ),
+          (Route<dynamic> route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Authentication failed.";
+      if (e.code == 'weak-password') {
+        errorMessage = "The password provided is too weak.";
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = "An account already exists for that email address.";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "Please insert a valid email destination mapping.";
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Firestore Error: ${e.toString()}"), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _collegeController.dispose();
+    _branchController.dispose();
+    _yearController.dispose();
     super.dispose();
-  }
-
-  Future<void> _register() async {
-    final name = _fullNameController.text.trim();
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final confirmPassword = _confirmPasswordController.text.trim();
-
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      _showErrorSnackBar("Please fill out all fields.");
-      return;
-    }
-
-    if (password != confirmPassword) {
-      _showErrorSnackBar("Passwords do not match.");
-      return;
-    }
-
-    if (password.length < 6) {
-      _showErrorSnackBar("Password must be at least 6 characters long.");
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    try {
-      // 1. Authenticate and create user configuration via Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email, 
-        password: password,
-      );
-
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        // 2. Set complete structural user record profile data directly in Firestore
-        await _firestore.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'fullName': name,
-          'email': email,
-          'walletBalance': 500.0, // Default signup initialization pool value
-          'platformProcessingPool': 0.0,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Account created successfully!"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      
-      Navigator.pop(context);
-    } on FirebaseAuthException catch (e) {
-      _showErrorSnackBar(e.message ?? "An authentication error occurred.");
-    } catch (e) {
-      // FIXED: Displays the precise runtime exception message so you can debug instantly
-      _showErrorSnackBar("Registration Error: ${e.toString()}");
-    } finally {
-      if (mounted) setState(() => isLoading = false);
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    
-    // Clear out any stale visible snackbars instantly
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
-        ),
-        backgroundColor: const Color(0xFF1E293B), // Premium charcoal dark mode styling
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16), // Prevents clipping at the base of the viewport layout
-        duration: const Duration(seconds: 5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
   }
 
   @override
@@ -118,174 +116,127 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text("Create Account", style: TextStyle(fontWeight: FontWeight.w700)),
-        backgroundColor: Colors.transparent,
+        title: const Text("Create SANSPHERE Account", style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
-        centerTitle: true,
+        backgroundColor: Colors.white,
       ),
-      body: Center(
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blueAccent.withOpacity(0.15),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    )
-                  ],
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Join the Campus Network",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(45),
-                    child: Image.asset(
-                      'assets/images/S.jpeg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return CircleAvatar(
-                          backgroundColor: Colors.blueAccent.withOpacity(0.1),
-                          child: const Icon(Icons.school, size: 45, color: Colors.blueAccent),
-                        );
-                      },
+                const SizedBox(height: 8),
+                const Text(
+                  "Sign up to establish your academic synchronization profiles, records, and vault features.",
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+                const SizedBox(height: 24),
+
+                // Full Name Input
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: "Full Name",
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Please enter your name" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Email Input
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: "Email Address",
+                    prefixIcon: const Icon(Icons.alternate_email_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || !val.contains('@') ? "Please provide a valid email address" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Password Input
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: "Secure Password",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.length < 6 ? "Password must exceed 5 characters" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // College Field
+                TextFormField(
+                  controller: _collegeController,
+                  decoration: InputDecoration(
+                    labelText: "College / Institution",
+                    prefixIcon: const Icon(Icons.school_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Please supply your institute name" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Branch Field
+                TextFormField(
+                  controller: _branchController,
+                  decoration: InputDecoration(
+                    labelText: "Academic Branch (e.g., Computer Engineering)",
+                    prefixIcon: const Icon(Icons.engineering_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Specify your engineering department branch" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Current Year Field
+                TextFormField(
+                  controller: _yearController,
+                  decoration: InputDecoration(
+                    labelText: "Current Class Year (e.g., 2nd Year)",
+                    prefixIcon: const Icon(Icons.calendar_today_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Provide your current enrollment class status" : null,
+                ),
+                const SizedBox(height: 32),
+
+                // Submission Handler Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    onPressed: _isLoading ? null : _handleRegistration,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Complete Sign Up", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                "SANSPHERE",
-                style: TextStyle(
-                  fontSize: 34, 
-                  fontWeight: FontWeight.w900, 
-                  color: Colors.blueAccent,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                "Join your college community gateway", 
-                style: TextStyle(color: Colors.grey, fontSize: 15, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 35),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 15,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 8),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _buildCustomTextField(
-                      controller: _fullNameController,
-                      label: "Full Name",
-                      icon: Icons.person_outline,
-                    ),
-                    const SizedBox(height: 18),
-                    _buildCustomTextField(
-                      controller: _emailController,
-                      label: "College Email ID",
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 18),
-                    _buildCustomTextField(
-                      controller: _passwordController,
-                      label: "Password",
-                      icon: Icons.lock_outlined,
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 18),
-                    _buildCustomTextField(
-                      controller: _confirmPasswordController,
-                      label: "Confirm Password",
-                      icon: Icons.lock_clock_outlined,
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 30),
-                    isLoading
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.0),
-                            child: CircularProgressIndicator(),
-                          )
-                        : Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: const LinearGradient(
-                                colors: [Colors.blueAccent, Colors.lightBlue],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                            ),
-                            child: ElevatedButton(
-                              onPressed: _register,
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 54),
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Text(
-                                "Sign Up", 
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 15),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-        prefixIcon: Icon(icon, color: Colors.blueAccent.withOpacity(0.7)),
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.withOpacity(0.15)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.blueAccent, width: 1.5),
         ),
       ),
     );

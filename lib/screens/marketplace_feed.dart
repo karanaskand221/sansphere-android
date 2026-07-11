@@ -58,7 +58,37 @@ class _MarketplaceFeedState extends State<MarketplaceFeed> {
   // Tracks unique document IDs unlocked by the current user
   final Set<String> _unlockedResourceIds = {};
 
+  // Custom alert interceptor preventing crashes when guest accounts trigger purchases
+  void _showGuestRestrictionModal(String actionContext) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline_rounded, color: Colors.orangeAccent),
+            SizedBox(width: 8),
+            Text("Authentication Needed")
+          ],
+        ),
+        content: Text("You are browsing Sansphere in Guest Mode.\n\nTo $actionContext and access premium academic assets, please complete full registration via the Profile tab."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Got it", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _executePurchase(ResourceModel item) {
+    // Gracefully interrupt transaction mechanics if the user context is missing
+    if (FirebaseAuth.instance.currentUser == null) {
+      _showGuestRestrictionModal("unlock documents");
+      return;
+    }
+
     if (globalUserWalletBalance < item.price) {
       showDialog(
         context: context,
@@ -118,6 +148,7 @@ class _MarketplaceFeedState extends State<MarketplaceFeed> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isGuest = FirebaseAuth.instance.currentUser == null;
     final String currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
@@ -143,7 +174,7 @@ class _MarketplaceFeedState extends State<MarketplaceFeed> {
                     const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Colors.blueAccent),
                     const SizedBox(width: 6),
                     Text(
-                      "₹${globalUserWalletBalance.toStringAsFixed(2)}",
+                      isGuest ? "₹0.00" : "₹${globalUserWalletBalance.toStringAsFixed(2)}",
                       style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent, fontSize: 14),
                     ),
                   ],
@@ -159,10 +190,14 @@ class _MarketplaceFeedState extends State<MarketplaceFeed> {
         icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
         label: const Text("Publish Material", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const UploadResourceScreen()),
-          );
+          if (isGuest) {
+            _showGuestRestrictionModal("upload source materials");
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const UploadResourceScreen()),
+            );
+          }
         },
       ),
       body: Column(
@@ -261,8 +296,8 @@ class _MarketplaceFeedState extends State<MarketplaceFeed> {
                   itemCount: filteredList.length,
                   itemBuilder: (context, index) {
                     final item = filteredList[index];
-                    // Check ownership rules based on UID strings or purchase vectors
-                    final bool isOwned = item.authorUid == currentUid || _unlockedResourceIds.contains(item.id);
+                    // Check ownership rules based on UID strings or purchase vectors safely
+                    final bool isOwned = !isGuest && (item.authorUid == currentUid || _unlockedResourceIds.contains(item.id));
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
