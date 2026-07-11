@@ -2,8 +2,8 @@ import "package:cloud_firestore/cloud_firestore.dart";
 import "package:firebase_storage/firebase_storage.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; 
 import 'screens/marketplace_feed.dart';
 import 'screens/reels_screen.dart';
 import 'screens/chat_list_screen.dart';
@@ -16,27 +16,13 @@ bool isFirebaseReady = false;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  const FirebaseOptions webFirebaseOptions = FirebaseOptions(
-    apiKey: "AIzaSyB64J31BsWmjtltHKAX1C7pAyAi_7hnM5I",
-    authDomain: "gen-lang-client-0227443307.firebaseapp.com",
-    projectId: "gen-lang-client-0227443307",
-    storageBucket: "gen-lang-client-0227443307.firebasestorage.app",
-    messagingSenderId: "1070172783321",
-    appId: "1:1070172783321:web:aed160f259e7195ffb74c8",
-  );
-
   try {
-    await Firebase.initializeApp(options: webFirebaseOptions);
-
-    if (kIsWeb) {
-      // Standard localhost connection. 
-      // The Codespace container forwards these to the internal emulators.
-      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
-      await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-      await FirebaseStorage.instance.useStorageEmulator('localhost', 9199);
-      debugPrint("Connected to Emulators on localhost");
-    }
+    // Attempt initialization using the configuration file
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     isFirebaseReady = true;
+    debugPrint("Connected safely using DefaultFirebaseOptions configuration.");
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
   }
@@ -46,6 +32,7 @@ void main() async {
 
 class SansphereApp extends StatelessWidget {
   const SansphereApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -56,20 +43,24 @@ class SansphereApp extends StatelessWidget {
               stream: FirebaseAuth.instance.authStateChanges(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(body: Center(child: CircularProgressIndicator()));
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
                 }
-                return snapshot.hasData ? const MainNavigationScreen() : LoginScreen();
+                if (snapshot.hasData && snapshot.data != null) {
+                  return const MainNavigationScreen();
+                }
+                return const LoginScreen();
               },
             )
-          : LoginScreen(),
+          : const LoginScreen(),
     );
   }
 }
 
-// ... (Keep your MainNavigationScreen and other classes exactly as they were)
-
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
+
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }

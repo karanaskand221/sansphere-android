@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // REQUIRED: Link data to Firestore database
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,7 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   
   final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance; // Instance to manage database records
+  final _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
 
   @override
@@ -35,24 +35,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Please fill out all fields."),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      _showErrorSnackBar("Please fill out all fields.");
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Passwords do not match."),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      _showErrorSnackBar("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 6) {
+      _showErrorSnackBar("Password must be at least 6 characters long.");
       return;
     }
 
@@ -68,7 +61,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final User? user = userCredential.user;
 
       if (user != null) {
-        // 2. Dump explicit MVP profile data fields straight into a custom Firestore document
+        // 2. Set complete structural user record profile data directly in Firestore
         await _firestore.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'fullName': name,
@@ -80,25 +73,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       if (!mounted) return;
-      Navigator.pop(context);
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message ?? "An error occurred."),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        const SnackBar(
+          content: Text("Account created successfully!"),
+          backgroundColor: Colors.green,
         ),
       );
+      
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      _showErrorSnackBar(e.message ?? "An authentication error occurred.");
+    } catch (e) {
+      // FIXED: Displays the precise runtime exception message so you can debug instantly
+      _showErrorSnackBar("Registration Error: ${e.toString()}");
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
   }
 
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    
+    // Clear out any stale visible snackbars instantly
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: const Color(0xFF1E293B), // Premium charcoal dark mode styling
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16), // Prevents clipping at the base of the viewport layout
+        duration: const Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Trendy soft canvas background accent
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text("Create Account", style: TextStyle(fontWeight: FontWeight.w700)),
         backgroundColor: Colors.transparent,
@@ -111,7 +129,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Premium branding element stack
               Container(
                 width: 90,
                 height: 90,
@@ -159,8 +176,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(color: Colors.grey, fontSize: 15, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 35),
-              
-              // Structured Modern Form Container Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -244,7 +259,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // Visual helper design function for premium inputs
   Widget _buildCustomTextField({
     required TextEditingController controller,
     required String label,
