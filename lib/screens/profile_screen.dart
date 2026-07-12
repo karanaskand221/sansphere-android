@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../global_state.dart';
+import 'package:share_plus/share_plus.dart';
+import 'support_screen.dart';
 import 'auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -33,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _yearController = TextEditingController();
   final _specController = TextEditingController();
   final _bioController = TextEditingController();
+  
 
   Map<String, dynamic>? userData;
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _profileStream;
@@ -112,17 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _triggerReferralMock() {
-    final rand = Random();
-    int reward = 10 + rand.nextInt(41);
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Referral System"),
-        content: Text("Link Generated! In the next update, sharing this link will credit ₹$reward to your dynamic wallet pool interface."),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("Awesome"))],
-      ),
-    );
+  Future<void> _shareReferralCode() async {
+    final code = userData?['referralCode'] ?? '';
+    if (code.isEmpty) return;
+    await Share.share('Your text here');
   }
 
   Future<void> _handleLogout() async {
@@ -318,6 +314,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   childAspectRatio: 1.4,
                   children: [
                     _buildWalletCard("Available Cash", "₹${GlobalState.currentUserWallet.toStringAsFixed(2)}", Icons.account_balance_wallet, Colors.teal),
+                    _buildWalletCard("SanCoins", "${(userData?['sanCoins'] ?? 0)}", Icons.stars_rounded, Colors.amber),
                     _buildWalletCard("My Document Sales", "₹${myEarnings.toStringAsFixed(2)}", Icons.monetization_on, Colors.purple),
                     _buildWalletCard("Platform Processing Pool", "₹${GlobalState.platformProcessingPool.toStringAsFixed(2)}", Icons.admin_panel_settings, Colors.blueGrey),
                     _buildWalletCard("Pending Processing", "Coming Soon", Icons.hourglass_top, Colors.grey),
@@ -327,13 +324,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 20),
                 
                 ListTile(
-                  tileColor: Colors.blueAccent.withOpacity(0.08),
+                  tileColor: Colors.blueAccent.withValues(alpha: 0.08),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   leading: const Icon(Icons.card_giftcard, color: Colors.blueAccent),
-                  title: const Text("Refer and Earn Framework", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  subtitle: const Text("Earn ₹10 to ₹50 randomly per unique node referral signup."),
+                  title: const Text("Refer and Earn", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: Text("Your code: ${userData?['referralCode'] ?? '...'} • Earn 100 SanCoins per signup"),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                  onTap: _triggerReferralMock,
+                  onTap: _shareReferralCode,
                 ),
                 const SizedBox(height: 10),
 
@@ -344,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: const Text("Customer Support Helpdesk", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   subtitle: const Text("Open communication channels."),
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Support ticketing channel initializing in upcoming patch update Routine.")));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen()));
                   },
                 ),
                 const SizedBox(height: 24),
