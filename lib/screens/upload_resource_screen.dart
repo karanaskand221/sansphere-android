@@ -431,8 +431,6 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
           return 'You are not authorized to upload this file.';
         case 'canceled':
           return 'Upload was cancelled.';
-        case 'unauthorized':
-          return 'Upload permission denied.';
       }
 
       return error.message ?? 'Firebase operation failed.';

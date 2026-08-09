@@ -5,16 +5,20 @@ service firebase.storage {
 
     match /academic_vault/{userId}/{resourceId}/{fileName} {
 
-      allow read: if false;
+      // Any signed-in user can download/view academic resources.
+      allow read: if request.auth != null;
 
+      // Only the owner can upload/update their own resource.
       allow create, update: if request.auth != null
         && request.auth.uid == userId
         && request.resource.size <= 25 * 1024 * 1024;
 
+      // Only the owner can delete their own resource.
       allow delete: if request.auth != null
         && request.auth.uid == userId;
     }
 
+    // Everything else remains blocked.
     match /{allPaths=**} {
       allow read, write: if false;
     }
