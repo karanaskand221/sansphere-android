@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
     <application
-        android:label="sansphere_android"
+        android:label="Sansphere"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
