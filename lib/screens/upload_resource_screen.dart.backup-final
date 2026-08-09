@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -66,10 +67,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
       databaseId: 'sansphere',
     );
 
-    _storage = FirebaseStorage.instanceFor(
-      app: Firebase.app(),
-      bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-    );
+    _storage = FirebaseStorage.instance;
   }
 
   @override
@@ -212,10 +210,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         _uploadStatus = 'Uploading ${file.name}...';
       });
 
-      final storageRef = FirebaseStorage.instanceFor(
-        app: Firebase.app(),
-        bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-      ).ref().child(storagePath);
+      final storageRef = _storage.ref().child(storagePath);
 
       final metadata = SettableMetadata(
         contentType: _contentType(file.name),
@@ -225,18 +220,6 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
           'originalName': file.name,
         },
       );
-
-      await user.getIdToken(true);
-
-      final refreshedUser = FirebaseAuth.instance.currentUser;
-      if (refreshedUser == null) {
-        throw FirebaseException(
-          plugin: 'firebase_auth',
-          code: 'unauthenticated',
-          message:
-              'Firebase Authentication session expired. Please sign in again.',
-        );
-      }
 
       final UploadTask uploadTask = storageRef.putData(file.bytes!, metadata);
 
@@ -376,10 +359,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
       // clean up the orphaned Storage file.
       if (storagePath != null) {
         try {
-          await FirebaseStorage.instanceFor(
-            app: Firebase.app(),
-            bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-          ).ref().child(storagePath).delete();
+          await _storage.ref().child(storagePath).delete();
         } catch (_) {}
       }
 

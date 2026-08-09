@@ -7,8 +7,7 @@ service cloud.firestore {
     /*
      * USER PROFILES
      *
-     * Client can create/update only its own profile.
-     * SanCoin rewards are handled by Cloud Functions.
+     * Used by the sansphere database.
      */
     match /users/{userId} {
 
@@ -25,7 +24,9 @@ service cloud.firestore {
 
 
     /*
-     * SERVER-ONLY COLLECTIONS
+     * REFERRAL RECORDS
+     *
+     * These should be created by Cloud Functions only.
      */
     match /referrals/{referralId} {
       allow read, write: if false;
@@ -35,6 +36,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+
+    /*
+     * AD REWARDS
+     *
+     * Cloud Functions only.
+     */
     match /ad_rewards/{rewardId} {
       allow read, write: if false;
     }
@@ -42,6 +49,9 @@ service cloud.firestore {
 
     /*
      * PURCHASES
+     *
+     * Users may see their own purchases.
+     * Creation is server-only.
      */
     match /purchases/{purchaseId} {
 
@@ -54,6 +64,10 @@ service cloud.firestore {
 
     /*
      * ACADEMIC VAULT
+     *
+     * Metadata can be read by logged-in users.
+     *
+     * Creation/update/delete is restricted to the uploader.
      */
     match /academic_vault/{resourceId} {
 
@@ -69,7 +83,7 @@ service cloud.firestore {
 
 
     /*
-     * CHAT
+     * CHAT ROOMS
      */
     match /chats/{chatId} {
 
@@ -98,14 +112,6 @@ service cloud.firestore {
 
       allow read, update, delete: if request.auth != null
         && resource.data.userId == request.auth.uid;
-    }
-
-
-    /*
-     * Default deny.
-     */
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }

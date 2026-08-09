@@ -1,0 +1,84 @@
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class SanCoinService {
+  SanCoinService._();
+
+  static final SanCoinService instance = SanCoinService._();
+
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
+  Future<Map<String, dynamic>> initializeWallet() async {
+    final result = await _functions
+        .httpsCallable('initializeSanCoins')
+        .call();
+
+    return _toMap(result.data);
+  }
+
+  Future<Map<String, dynamic>> applyReferral(String code) async {
+    final cleanCode = code.trim().toUpperCase();
+
+    if (cleanCode.isEmpty) {
+      throw ArgumentError('Referral code required.');
+    }
+
+    final result = await _functions
+        .httpsCallable('applyReferral')
+        .call({
+      'code': cleanCode,
+    });
+
+    return _toMap(result.data);
+  }
+
+  Future<Map<String, dynamic>> rewardAd(String rewardId) async {
+    final cleanRewardId = rewardId.trim();
+
+    if (cleanRewardId.isEmpty) {
+      throw ArgumentError('Reward ID required.');
+    }
+
+    final result = await _functions
+        .httpsCallable('rewardAd')
+        .call({
+      'rewardId': cleanRewardId,
+    });
+
+    return _toMap(result.data);
+  }
+
+  Future<Map<String, dynamic>> purchaseResource(String resourceId) async {
+    final cleanResourceId = resourceId.trim();
+
+    if (cleanResourceId.isEmpty) {
+      throw ArgumentError('Resource ID required.');
+    }
+
+    final result = await _functions
+        .httpsCallable('purchaseResource')
+        .call({
+      'resourceId': cleanResourceId,
+    });
+
+    return _toMap(result.data);
+  }
+
+  Future<Map<String, dynamic>> getWallet() async {
+    final result = await _functions
+        .httpsCallable('getSanCoinWallet')
+        .call();
+
+    return _toMap(result.data);
+  }
+
+  Map<String, dynamic> _toMap(dynamic data) {
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    return <String, dynamic>{};
+  }
+}

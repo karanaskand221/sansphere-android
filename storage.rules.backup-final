@@ -3,6 +3,15 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    /*
+     * Academic Vault files.
+     *
+     * Upload/update/delete only by the owner.
+     * Maximum file size: 25 MB.
+     *
+     * Direct reads remain disabled because purchased files
+     * are intended to be delivered through the Cloud Function.
+     */
     match /academic_vault/{userId}/{resourceId}/{fileName} {
 
       allow read: if false;

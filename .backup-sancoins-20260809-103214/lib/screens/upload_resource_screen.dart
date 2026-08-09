@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,7 +13,10 @@ import '../models/academic_resource.dart';
 class UploadResourceScreen extends StatefulWidget {
   final GlobalState globalState;
 
-  const UploadResourceScreen({super.key, required this.globalState});
+  const UploadResourceScreen({
+    super.key,
+    required this.globalState,
+  });
 
   @override
   State<UploadResourceScreen> createState() => _UploadResourceScreenState();
@@ -66,10 +71,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
       databaseId: 'sansphere',
     );
 
-    _storage = FirebaseStorage.instanceFor(
-      app: Firebase.app(),
-      bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-    );
+    _storage = FirebaseStorage.instance;
   }
 
   @override
@@ -154,7 +156,10 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
 
   Future<Map<String, dynamic>> _getCurrentUserProfile(User user) async {
     try {
-      final doc = await _userFirestore.collection('users').doc(user.uid).get();
+      final doc = await _userFirestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
       if (doc.exists && doc.data() != null) {
         return doc.data()!;
@@ -196,26 +201,28 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
     try {
       final profile = await _getCurrentUserProfile(user);
 
-      final String uploaderName = _uploaderController.text.trim().isNotEmpty
-          ? _uploaderController.text.trim()
-          : (profile['fullName'] ?? user.displayName ?? 'Student').toString();
+      final String uploaderName =
+          _uploaderController.text.trim().isNotEmpty
+              ? _uploaderController.text.trim()
+              : (profile['fullName'] ?? user.displayName ?? 'Student')
+                  .toString();
 
-      final String college = (profile['college'] ?? 'SITRC').toString();
+      final String college =
+          (profile['college'] ?? 'SITRC').toString();
 
-      final String customDocId = 'SAN-${DateTime.now().millisecondsSinceEpoch}';
+      final String customDocId =
+          'SAN-${DateTime.now().millisecondsSinceEpoch}';
 
       final String safeName = _safeFileName(file.name);
 
-      storagePath = 'academic_vault/${user.uid}/$customDocId/$safeName';
+      storagePath =
+          'academic_vault/${user.uid}/$customDocId/$safeName';
 
       setState(() {
         _uploadStatus = 'Uploading ${file.name}...';
       });
 
-      final storageRef = FirebaseStorage.instanceFor(
-        app: Firebase.app(),
-        bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-      ).ref().child(storagePath);
+      final storageRef = _storage.ref().child(storagePath);
 
       final metadata = SettableMetadata(
         contentType: _contentType(file.name),
@@ -226,19 +233,10 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         },
       );
 
-      await user.getIdToken(true);
-
-      final refreshedUser = FirebaseAuth.instance.currentUser;
-      if (refreshedUser == null) {
-        throw FirebaseException(
-          plugin: 'firebase_auth',
-          code: 'unauthenticated',
-          message:
-              'Firebase Authentication session expired. Please sign in again.',
-        );
-      }
-
-      final UploadTask uploadTask = storageRef.putData(file.bytes!, metadata);
+      final UploadTask uploadTask = storageRef.putData(
+        file.bytes!,
+        metadata,
+      );
 
       uploadTask.snapshotEvents.listen(
         (TaskSnapshot snapshot) {
@@ -247,9 +245,8 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
           final total = snapshot.totalBytes;
 
           setState(() {
-            _uploadProgress = total > 0
-                ? snapshot.bytesTransferred / total
-                : 0.0;
+            _uploadProgress =
+                total > 0 ? snapshot.bytesTransferred / total : 0.0;
 
             switch (snapshot.state) {
               case TaskState.running:
@@ -376,10 +373,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
       // clean up the orphaned Storage file.
       if (storagePath != null) {
         try {
-          await FirebaseStorage.instanceFor(
-            app: Firebase.app(),
-            bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-          ).ref().child(storagePath).delete();
+          await _storage.ref().child(storagePath).delete();
         } catch (_) {}
       }
 
@@ -596,7 +590,10 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                   items: _departments.map((department) {
                     return DropdownMenuItem(
                       value: department,
-                      child: Text(department, overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        department,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     );
                   }).toList(),
                   onChanged: _isUploading
@@ -660,7 +657,9 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                 if (_isUploading) ...[
                   Text(
                     _uploadStatus,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
 
                   const SizedBox(height: 10),
@@ -675,7 +674,9 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
 
                   Text(
                     '${(_uploadProgress * 100).toStringAsFixed(0)}%',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
 
                   const SizedBox(height: 20),
@@ -697,7 +698,9 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                           )
                         : const Icon(Icons.cloud_upload_rounded),
                     label: Text(
-                      _isUploading ? 'Uploading...' : 'Upload & Publish',
+                      _isUploading
+                          ? 'Uploading...'
+                          : 'Upload & Publish',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -732,10 +735,14 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: hasFile ? const Color(0xFFEFF6FF) : Colors.white,
+          color: hasFile
+              ? const Color(0xFFEFF6FF)
+              : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: hasFile ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1),
+            color: hasFile
+                ? const Color(0xFF2563EB)
+                : const Color(0xFFCBD5E1),
             width: 1.5,
           ),
         ),
@@ -764,9 +771,14 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
             const SizedBox(height: 14),
 
             Text(
-              hasFile ? file.name : 'Select academic file',
+              hasFile
+                  ? file.name
+                  : 'Select academic file',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             const SizedBox(height: 6),
@@ -776,7 +788,10 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                   ? '${_formatBytes(file.size)} • ${_extension(file.name).toUpperCase()}'
                   : 'PDF, DOC, DOCX, PPT, XLS, TXT or ZIP',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Colors.grey),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+              ),
             ),
 
             const SizedBox(height: 14),
@@ -784,7 +799,9 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
             OutlinedButton.icon(
               onPressed: _isUploading ? null : _pickFile,
               icon: const Icon(Icons.folder_open_rounded),
-              label: Text(hasFile ? 'Change File' : 'Choose File'),
+              label: Text(
+                hasFile ? 'Change File' : 'Choose File',
+              ),
             ),
           ],
         ),

@@ -1,0 +1,92 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+enum ResourceCategory {
+  lectureNotes,
+  pyq,
+  questionBank,
+  testPaper,
+}
+
+extension ResourceCategoryExtension on ResourceCategory {
+  String get displayName {
+    switch (this) {
+      case ResourceCategory.lectureNotes:
+        return 'Lecture Notes';
+      case ResourceCategory.pyq:
+        return 'Previous Year Questions (PYQ)';
+      case ResourceCategory.questionBank:
+        return 'Question Bank';
+      case ResourceCategory.testPaper:
+        return 'Test Paper';
+    }
+  }
+}
+
+class AcademicResource {
+  final String id;
+  final String customDocId;
+  final String title;
+  final String description;
+  final String subject;
+  final String college;
+  final String department;
+  final String type;
+  final double price;
+  final String fileUrl;
+  final String uploaderId;
+  final String uploaderName;
+  final DateTime createdAt;
+
+  AcademicResource({
+    required this.id,
+    this.customDocId = '',
+    required this.title,
+    required this.description,
+    required this.subject,
+    required this.college,
+    required this.department,
+    required this.type,
+    required this.price,
+    required this.fileUrl,
+    required this.uploaderId,
+    required this.uploaderName,
+    required this.createdAt,
+  });
+
+  factory AcademicResource.fromMap(Map<String, dynamic> map, String docId) {
+    return AcademicResource(
+      id: docId,
+      customDocId: map['customDocId'] ?? docId,
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      subject: map['subject'] ?? '',
+      college: map['college'] ?? '',
+      department: map['department'] ?? '',
+      type: map['type'] ?? 'Lecture Notes',
+      price: (map['price'] ?? 0.0).toDouble(),
+      fileUrl: map['fileUrl'] ?? '',
+      uploaderId: map['uploaderId'] ?? '',
+      uploaderName: map['uploaderName'] ?? 'Anonymous',
+      createdAt: map['createdAt'] != null
+          ? (map['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'customDocId': customDocId,
+      'title': title,
+      'description': description,
+      'subject': subject,
+      'college': college,
+      'department': department,
+      'type': type,
+      'price': price,
+      'fileUrl': fileUrl,
+      'uploaderId': uploaderId,
+      'uploaderName': uploaderName,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+}

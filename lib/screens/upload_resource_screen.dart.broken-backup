@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -67,9 +68,9 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
     );
 
     _storage = FirebaseStorage.instanceFor(
-      app: Firebase.app(),
-      bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-    );
+        app: Firebase.app(),
+        bucket: 'gen-lang-client-0227443307.firebasestorage.app',
+      );
   }
 
   @override
@@ -215,7 +216,10 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
       final storageRef = FirebaseStorage.instanceFor(
         app: Firebase.app(),
         bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-      ).ref().child(storagePath);
+      )For(
+          app: Firebase.app(),
+          bucket: 'gs://gen-lang-client-0227443307.firebasestorage.app',
+        ).ref().child(storagePath);
 
       final metadata = SettableMetadata(
         contentType: _contentType(file.name),
@@ -233,8 +237,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         throw FirebaseException(
           plugin: 'firebase_auth',
           code: 'unauthenticated',
-          message:
-              'Firebase Authentication session expired. Please sign in again.',
+          message: 'Firebase Authentication session expired. Please sign in again.',
         );
       }
 
@@ -377,9 +380,12 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
       if (storagePath != null) {
         try {
           await FirebaseStorage.instanceFor(
-            app: Firebase.app(),
-            bucket: 'gen-lang-client-0227443307.firebasestorage.app',
-          ).ref().child(storagePath).delete();
+        app: Firebase.app(),
+        bucket: 'gen-lang-client-0227443307.firebasestorage.app',
+      )For(
+          app: Firebase.app(),
+          bucket: 'gs://gen-lang-client-0227443307.firebasestorage.app',
+        ).ref().child(storagePath).delete();
         } catch (_) {}
       }
 

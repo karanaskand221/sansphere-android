@@ -1,3 +1,4 @@
+import '../../services/sancoin_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,7 +14,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-
+  
   // Explicitly targeting the custom database named 'sansphere'
   final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
@@ -41,9 +42,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // 1. Create the user authentication entry in Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
       User? user = userCredential.user;
 
@@ -62,29 +63,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'specification': 'Not Specified Yet',
           'createdAt': FieldValue.serverTimestamp(),
           'lastProfileUpdate': null,
-          'sanCoins': 200,
-          'earnedCoins': 200,
-          'spentCoins': 0,
-          'purchasedKnowledge': 0,
-          'adsWatched': 0,
-          'referralCount': 0,
-          'walletInitialized': true,
-          'referralRewardClaimed': false,
-          'earnedCoins': 0,
-          'spentCoins': 0,
-          'purchasedKnowledge': 0,
-          'adsWatched': 0,
-          'referralCount': 0,
-          'walletInitialized': false,
-          'referralRewardClaimed': false,
+          'sanCoins': 0,
           'referralCode': myReferralCode,
           'phoneNumber': '',
           'showPhoneNumber': false,
         });
 
-        final String enteredCode = _referralController.text
-            .trim()
-            .toUpperCase();
+        final String enteredCode = _referralController.text.trim().toUpperCase();
         if (enteredCode.isNotEmpty && enteredCode != myReferralCode) {
           final referrerQuery = await _firestore
               .collection('users')
@@ -107,7 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
 
         if (!mounted) return;
-
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Account registered and synchronized successfully!"),
@@ -132,19 +117,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       } else if (e.code == 'invalid-email') {
         errorMessage = "Please insert a valid email destination mapping.";
       }
-
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.redAccent,
-        ),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Firestore Error: ${e.toString()}"),
-          backgroundColor: Colors.redAccent,
-        ),
+        SnackBar(content: Text("Firestore Error: ${e.toString()}"), backgroundColor: Colors.redAccent),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -168,10 +147,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text(
-          "Create SANSPHERE Account",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Create SANSPHERE Account", style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
         backgroundColor: Colors.white,
       ),
@@ -185,11 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const Text(
                   "Join the Campus Network",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -204,13 +176,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: "Full Name",
                     prefixIcon: const Icon(Icons.badge_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty
-                      ? "Please enter your name"
-                      : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? "Please enter your name" : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -221,13 +189,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: "Email Address",
                     prefixIcon: const Icon(Icons.alternate_email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (val) => val == null || !val.contains('@')
-                      ? "Please provide a valid email address"
-                      : null,
+                  validator: (val) => val == null || !val.contains('@') ? "Please provide a valid email address" : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -239,21 +203,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     labelText: "Secure Password",
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
+                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (val) => val == null || val.length < 6
-                      ? "Password must exceed 5 characters"
-                      : null,
+                  validator: (val) => val == null || val.length < 6 ? "Password must exceed 5 characters" : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -263,13 +218,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: "College / Institution",
                     prefixIcon: const Icon(Icons.school_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty
-                      ? "Please supply your institute name"
-                      : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? "Please supply your institute name" : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -279,13 +230,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: "Academic Branch (e.g., Computer Engineering)",
                     prefixIcon: const Icon(Icons.engineering_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty
-                      ? "Specify your engineering department branch"
-                      : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? "Specify your engineering department branch" : null,
                 ),
                 const SizedBox(height: 16),
 
@@ -295,13 +242,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: "Current Class Year (e.g., 2nd Year)",
                     prefixIcon: const Icon(Icons.calendar_today_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (val) => val == null || val.trim().isEmpty
-                      ? "Provide your current enrollment class status"
-                      : null,
+                  validator: (val) => val == null || val.trim().isEmpty ? "Provide your current enrollment class status" : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -309,9 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: InputDecoration(
                     labelText: "Referral Code (optional)",
                     prefixIcon: const Icon(Icons.card_giftcard_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -324,21 +265,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
                     ),
                     onPressed: _isLoading ? null : _handleRegistration,
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Complete Sign Up",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
+                        : const Text("Complete Sign Up", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
               ],

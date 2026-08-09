@@ -20,11 +20,6 @@
       "indexes": "firestore.indexes.json"
     },
     {
-      "database": "sansphere",
-      "rules": "firestore.rules",
-      "indexes": "firestore.indexes.json"
-    },
-    {
       "database": "sanvault",
       "rules": "firestore.rules",
       "indexes": "firestore.indexes.json"

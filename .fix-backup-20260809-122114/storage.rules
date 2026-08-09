@@ -1,20 +1,34 @@
 rules_version = '2';
 
 service firebase.storage {
+
   match /b/{bucket}/o {
 
+    /*
+     * Academic resources.
+     *
+     * Uploaders can upload their own files.
+     *
+     * Downloads are NOT directly allowed here.
+     * Purchased files are accessed through the
+     * getPurchasedFileUrl Cloud Function.
+     */
     match /academic_vault/{userId}/{resourceId}/{fileName} {
 
       allow read: if false;
 
       allow create, update: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.size <= 25 * 1024 * 1024;
+        && request.resource.size < 25 * 1024 * 1024;
 
       allow delete: if request.auth != null
         && request.auth.uid == userId;
     }
 
+
+    /*
+     * Everything else protected.
+     */
     match /{allPaths=**} {
       allow read, write: if false;
     }
