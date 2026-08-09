@@ -1,30 +1,65 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:sansphere_android/main.dart';
+import 'package:sansphere_android/models/academic_resource.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('AcademicResource', () {
+    test('fromMap parses all fields correctly', () {
+      final map = {
+        'customDocId': 'DS-NOTES-01',
+        'title': 'Data Structures Notes',
+        'subtitle': 'Unit 1-5 complete notes',
+        'type': 'Notes',
+        'college': 'SITRC',
+        'price': 49.0,
+        'authorUid': 'uid123',
+        'authorName': 'Asha Patil',
+        'fileUrl': 'https://example.com/file.pdf',
+        'fileName': 'notes.pdf',
+        'fileSize': 204800,
+        'meta': '1 File • 0.2 MB',
+      };
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      final resource = AcademicResource.fromMap(map, 'doc123');
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      expect(resource.id, 'doc123');
+      expect(resource.customDocId, 'DS-NOTES-01');
+      expect(resource.title, 'Data Structures Notes');
+      expect(resource.price, 49.0);
+      expect(resource.fileUrl, 'https://example.com/file.pdf');
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('fromMap falls back to defaults for missing fields', () {
+      final resource = AcademicResource.fromMap(const {}, 'doc456');
+
+      expect(resource.title, '');
+      expect(resource.customDocId, '');
+      expect(resource.price, 0.0);
+      expect(resource.fileSize, 0);
+    });
+
+    test('toMap includes all editable fields', () {
+      final resource = AcademicResource(
+        id: 'doc789',
+        customDocId: 'CODE-101',
+        title: 'Title',
+        subtitle: 'Subtitle',
+        type: 'Code',
+        college: 'SIEM',
+        price: 0.0,
+        authorUid: 'uid456',
+        authorName: 'Author',
+        fileUrl: 'https://example.com/file.zip',
+        fileName: 'file.zip',
+        fileSize: 1024,
+        meta: '1 File',
+      );
+
+      final map = resource.toMap();
+
+      expect(map['title'], 'Title');
+      expect(map['customDocId'], 'CODE-101');
+      expect(map['fileUrl'], 'https://example.com/file.zip');
+      expect(map.containsKey('createdAt'), isTrue);
+    });
   });
 }

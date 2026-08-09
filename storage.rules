@@ -1,10 +1,25 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Academic Vault files
+    match /academic_vault/{userId}/{resourceId}/{fileName} {
+
+      // Any authenticated user can read/download
+      allow read: if request.auth != null;
+
+      // Owner can upload/create/update files
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 25 * 1024 * 1024;
+
+      // Owner can delete files
+      allow delete: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // Everything else remains protected
     match /{allPaths=**} {
       allow read, write: if false;
     }

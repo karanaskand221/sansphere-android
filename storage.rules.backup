@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Academic Vault files
+    match /academic_vault/{userId}/{resourceId}/{fileName} {
+
+      // Any authenticated user can view/download
+      allow read: if request.auth != null;
+
+      // Only the owner can upload/update/delete
+      allow write: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    // Everything else remains protected.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

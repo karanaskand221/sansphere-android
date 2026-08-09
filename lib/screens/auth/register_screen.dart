@@ -27,6 +27,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _collegeController = TextEditingController();
   final _branchController = TextEditingController();
   final _yearController = TextEditingController();
+  final _referralController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -48,6 +49,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (user != null) {
         // 2. CONNECT TO FIRESTORE: Write initial profile documents matching User UID
+        final String myReferralCode = user.uid.substring(0, 8).toUpperCase();
+
         await _firestore.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'fullName': _nameController.text.trim(),
@@ -59,7 +62,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'specification': 'Not Specified Yet',
           'createdAt': FieldValue.serverTimestamp(),
           'lastProfileUpdate': null,
+          'sanCoins': 0,
+          'referralCode': myReferralCode,
+          'phoneNumber': '',
+          'showPhoneNumber': false,
         });
+
+        final String enteredCode = _referralController.text.trim().toUpperCase();
+        if (enteredCode.isNotEmpty && enteredCode != myReferralCode) {
+          final referrerQuery = await _firestore
+              .collection('users')
+              .where('referralCode', isEqualTo: enteredCode)
+              .limit(1)
+              .get();
+
+          if (referrerQuery.docs.isNotEmpty) {
+            final referrerDoc = referrerQuery.docs.first;
+            await _firestore.collection('users').doc(referrerDoc.id).update({
+              'sanCoins': FieldValue.increment(100),
+            });
+            await _firestore.collection('referrals').add({
+              'referrerUid': referrerDoc.id,
+              'newUserUid': user.uid,
+              'coinsAwarded': 100,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        }
 
         if (!mounted) return;
         
@@ -73,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // 3. FIXED: Removed 'const' to allow dynamic navigation execution safely
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (_) => const MainNavigationScreen(isGuestMode: false),
+            builder: (_) => MainNavigationScreen(isGuestMode: false),
           ),
           (Route<dynamic> route) => false,
         );
@@ -108,6 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _collegeController.dispose();
     _branchController.dispose();
     _yearController.dispose();
+    _referralController.dispose();
     super.dispose();
   }
 
@@ -214,6 +244,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   validator: (val) => val == null || val.trim().isEmpty ? "Provide your current enrollment class status" : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _referralController,
+                  decoration: InputDecoration(
+                    labelText: "Referral Code (optional)",
+                    prefixIcon: const Icon(Icons.card_giftcard_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
                 const SizedBox(height: 32),
 

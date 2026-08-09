@@ -1,145 +1,147 @@
 import 'package:flutter/material.dart';
+import '../models/academic_resource.dart';
 
-class FilePreviewScreen extends StatefulWidget {
-  final String documentTitle;
-  final String documentCampus;
-  
-  const FilePreviewScreen({
-    super.key, 
-    required this.documentTitle, 
-    required this.documentCampus
-  });
+class FilePreviewScreen extends StatelessWidget {
+  final AcademicResource resource;
 
-  @override
-  State<FilePreviewScreen> createState() => _FilePreviewScreenState();
-}
-
-class _FilePreviewScreenState extends State<FilePreviewScreen> {
-  int _currentPage = 1;
-  final int _totalMockPages = 4;
+  const FilePreviewScreen({Key? key, required this.resource}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[800],
       appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        foregroundColor: Colors.white,
-        title: Text(widget.documentTitle, style: const TextStyle(fontSize: 16)),
+        title: Text(resource.fileName),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download_for_offline_outlined, color: Colors.amberAccent),
+            icon: const Icon(Icons.download),
+            tooltip: 'Download File',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Saving encrypted PDF locally to device cache storage...")),
+                SnackBar(content: Text('Downloading ${resource.fileName}...')),
               );
             },
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        color: Colors.grey[900],
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left, color: Colors.white),
-              onPressed: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+      body: Column(
+        children: [
+          // Banner Banner Header
+          Container(
+            color: Theme.of(context).primaryColor.withOpacity(0.08),
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Previewing document: ${resource.title}',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              "Page $_currentPage of $_totalMockPages",
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right, color: Colors.white),
-              onPressed: _currentPage < _totalMockPages ? () => setState(() => _currentPage++) : null,
-            ),
-          ],
-        ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Card(
-            elevation: 12,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+
+          // Simulated Document View Canvas
+          Expanded(
             child: Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxWidth: 500, minHeight: 600),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Mock Document Header Branding Block
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("CAMPUS CORE: ${widget.documentCampus}", style: const TextStyle(fontSize: 11, color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-                      const Icon(Icons.verified_user, color: Colors.green, size: 16),
-                    ],
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    spreadRadius: 2,
                   ),
-                  const Divider(),
-                  const SizedBox(height: 12),
-                  Text(
-                    "Official Academic Transcript - Page $_currentPage",
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  // Generative Layout Block Rendering Simulated Handwritten/Typed Examination text vectors
-                  _buildMockDocumentContentLine(3),
-                  _buildMockDocumentContentLine(5),
-                  _buildMockDocumentContentLine(2),
-                  const SizedBox(height: 24),
-                  Container(
-                    width: double.infinity,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
-                    ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.insights, color: Colors.blueAccent, size: 32),
-                          SizedBox(height: 6),
-                          Text("[ Reference Diagram / Engineering Proof Sheet ]", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        ],
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'DOCUMENT PREVIEW • PAGE 1 OF 12',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildMockDocumentContentLine(4),
-                  _buildMockDocumentContentLine(6),
-                ],
+                    const SizedBox(height: 24),
+                    Text(
+                      resource.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Subject: ${resource.subject} | Department: ${resource.department}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Divider(height: 32),
+                    Text(
+                      resource.description,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.6,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '1. Executive Overview',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+                      style: TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '2. Core Concepts & Definitions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+                      style: TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMockDocumentContentLine(int paragraphsCount) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(paragraphsCount, (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 4.0),
-          child: Container(
-            width: double.infinity,
-            height: 12,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        )),
+        ],
       ),
     );
   }

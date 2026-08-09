@@ -1,0 +1,3863 @@
+================ PROJECT STRUCTURE ================
+./.firebase/hosting.YnVpbGQvd2Vi.cache
+./.firebaserc
+./.flutter-plugins-dependencies
+./.gitignore
+./.metadata
+./README.md
+./analysis_options.yaml
+./android/.gitignore
+./android/app/build.gradle.kts
+./android/app/google-services.json
+./android/app/src/debug/AndroidManifest.xml
+./android/app/src/main/AndroidManifest.xml
+./android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+./android/app/src/main/kotlin/com/example/sansphere_android/MainActivity.kt
+./android/app/src/main/res/drawable-hdpi/android12splash.png
+./android/app/src/main/res/drawable-hdpi/splash.png
+./android/app/src/main/res/drawable-mdpi/android12splash.png
+./android/app/src/main/res/drawable-mdpi/splash.png
+./android/app/src/main/res/drawable-night-hdpi/android12splash.png
+./android/app/src/main/res/drawable-night-mdpi/android12splash.png
+./android/app/src/main/res/drawable-night-xhdpi/android12splash.png
+./android/app/src/main/res/drawable-night-xxhdpi/android12splash.png
+./android/app/src/main/res/drawable-night-xxxhdpi/android12splash.png
+./android/app/src/main/res/drawable-v21/background.png
+./android/app/src/main/res/drawable-v21/launch_background.xml
+./android/app/src/main/res/drawable-xhdpi/android12splash.png
+./android/app/src/main/res/drawable-xhdpi/splash.png
+./android/app/src/main/res/drawable-xxhdpi/android12splash.png
+./android/app/src/main/res/drawable-xxhdpi/splash.png
+./android/app/src/main/res/drawable-xxxhdpi/android12splash.png
+./android/app/src/main/res/drawable-xxxhdpi/splash.png
+./android/app/src/main/res/drawable/background.png
+./android/app/src/main/res/drawable/launch_background.xml
+./android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+./android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+./android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+./android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+./android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+./android/app/src/main/res/values-night-v31/styles.xml
+./android/app/src/main/res/values-night/styles.xml
+./android/app/src/main/res/values-v31/styles.xml
+./android/app/src/main/res/values/styles.xml
+./android/app/src/profile/AndroidManifest.xml
+./android/build.gradle.kts
+./android/gradle.properties
+./android/gradle/wrapper/gradle-wrapper.jar
+./android/gradle/wrapper/gradle-wrapper.properties
+./android/gradlew
+./android/gradlew.bat
+./android/local.properties
+./android/sansphere_android_android.iml
+./android/settings.gradle.kts
+./apply_chat_button_patch.py
+./apply_phone_field_patch.py
+./apply_referral_patch.py
+./apply_vault_feed_patch.py
+./assets/images/SS.png
+./final_cleanup_patch.py
+./firebase.json
+./firestore-debug.log
+./firestore.indexes.json
+./firestore.rules
+./fix_vault_db.py
+./ios/.gitignore
+./ios/Flutter/AppFrameworkInfo.plist
+./ios/Flutter/Debug.xcconfig
+./ios/Flutter/Generated.xcconfig
+./ios/Flutter/Release.xcconfig
+./ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+./ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Sources/FlutterGeneratedPluginSwiftPackage/FlutterGeneratedPluginSwiftPackage.swift
+./ios/Flutter/ephemeral/flutter_lldb_helper.py
+./ios/Flutter/ephemeral/flutter_lldbinit
+./ios/Flutter/ephemeral/flutter_native_integration.env
+./ios/Flutter/flutter_export_environment.sh
+./ios/Runner.xcodeproj/project.pbxproj
+./ios/Runner.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+./ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+./ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+./ios/Runner.xcworkspace/contents.xcworkspacedata
+./ios/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+./ios/Runner.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+./ios/Runner/AppDelegate.swift
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png
+./ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png
+./ios/Runner/Assets.xcassets/LaunchBackground.imageset/Contents.json
+./ios/Runner/Assets.xcassets/LaunchBackground.imageset/background.png
+./ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json
+./ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png
+./ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png
+./ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png
+./ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md
+./ios/Runner/Base.lproj/LaunchScreen.storyboard
+./ios/Runner/Base.lproj/Main.storyboard
+./ios/Runner/GeneratedPluginRegistrant.h
+./ios/Runner/GeneratedPluginRegistrant.m
+./ios/Runner/Info.plist
+./ios/Runner/Runner-Bridging-Header.h
+./ios/Runner/SceneDelegate.swift
+./ios/RunnerTests/RunnerTests.swift
+./lib/firebase_options.dart
+./lib/global_state.dart
+./lib/main.dart
+./lib/models/academic_resource.dart
+./lib/models/academic_resource.dart.backup
+./lib/screens/auth/login_screen.dart
+./lib/screens/auth/register_screen.dart
+./lib/screens/chat_list_screen.dart
+./lib/screens/file_preview_screen.dart
+./lib/screens/marketplace_feed.dart
+./lib/screens/profile_screen.dart
+./lib/screens/reels_screen.dart
+./lib/screens/resource_detail_screen.dart
+./lib/screens/support_screen.dart
+./lib/screens/upload_resource_screen.dart
+./linux/.gitignore
+./linux/CMakeLists.txt
+./linux/flutter/CMakeLists.txt
+./linux/flutter/ephemeral/generated_config.cmake
+./linux/flutter/generated_plugin_registrant.cc
+./linux/flutter/generated_plugin_registrant.h
+./linux/flutter/generated_plugins.cmake
+./linux/runner/CMakeLists.txt
+./linux/runner/main.cc
+./linux/runner/my_application.cc
+./linux/runner/my_application.h
+./macos/.gitignore
+./macos/Flutter/Flutter-Debug.xcconfig
+./macos/Flutter/Flutter-Release.xcconfig
+./macos/Flutter/GeneratedPluginRegistrant.swift
+./macos/Flutter/ephemeral/Flutter-Generated.xcconfig
+./macos/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+./macos/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Sources/FlutterGeneratedPluginSwiftPackage/FlutterGeneratedPluginSwiftPackage.swift
+./macos/Flutter/ephemeral/flutter_export_environment.sh
+./macos/Flutter/ephemeral/flutter_native_integration.env
+./macos/Runner.xcodeproj/project.pbxproj
+./macos/Runner.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+./macos/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+./macos/Runner.xcworkspace/contents.xcworkspacedata
+./macos/Runner.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+./macos/Runner/AppDelegate.swift
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_128.png
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png
+./macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_64.png
+./macos/Runner/Base.lproj/MainMenu.xib
+./macos/Runner/Configs/AppInfo.xcconfig
+./macos/Runner/Configs/Debug.xcconfig
+./macos/Runner/Configs/Release.xcconfig
+./macos/Runner/Configs/Warnings.xcconfig
+./macos/Runner/DebugProfile.entitlements
+./macos/Runner/Info.plist
+./macos/Runner/MainFlutterWindow.swift
+./macos/Runner/Release.entitlements
+./macos/RunnerTests/RunnerTests.swift
+./package-lock.json
+./package.json
+./project_code_dump.txt
+./project_dump.txt
+./project_snapshot.txt
+./pubspec.lock
+./pubspec.yaml
+./sansphere-source.zip
+./sansphere_android.iml
+./storage.rules
+./test/widget_test.dart
+./update_emulators.py
+./vault_module.zip
+./web/favicon.png
+./web/icons/Icon-192.png
+./web/icons/Icon-512.png
+./web/icons/Icon-maskable-192.png
+./web/icons/Icon-maskable-512.png
+./web/index.html
+./web/manifest.json
+./windows/.gitignore
+./windows/CMakeLists.txt
+./windows/flutter/CMakeLists.txt
+./windows/flutter/generated_plugin_registrant.cc
+./windows/flutter/generated_plugin_registrant.h
+./windows/flutter/generated_plugins.cmake
+./windows/runner/CMakeLists.txt
+./windows/runner/Runner.rc
+./windows/runner/flutter_window.cpp
+./windows/runner/flutter_window.h
+./windows/runner/main.cpp
+./windows/runner/resource.h
+./windows/runner/resources/app_icon.ico
+./windows/runner/runner.exe.manifest
+./windows/runner/utils.cpp
+./windows/runner/utils.h
+./windows/runner/win32_window.cpp
+./windows/runner/win32_window.h
+
+================ GIT STATUS ================
+ M .firebaserc
+ M android/app/src/main/AndroidManifest.xml
+ M android/app/src/main/res/drawable-v21/launch_background.xml
+ M android/app/src/main/res/drawable/launch_background.xml
+ M android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+ M android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+ M android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+ M android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+ M android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+ M android/app/src/main/res/values-night/styles.xml
+ M android/app/src/main/res/values/styles.xml
+ D assets/bestlogo.png
+ D assets/s.jpeg
+ M firebase.json
+ M firestore.indexes.json
+ M firestore.rules
+ M ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json
+ M ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png
+ M ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png
+ M ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png
+ M ios/Runner/Base.lproj/LaunchScreen.storyboard
+ M ios/Runner/Info.plist
+ M lib/global_state.dart
+ M lib/main.dart
+ M lib/models/academic_resource.dart
+ M lib/screens/auth/register_screen.dart
+ M lib/screens/chat_list_screen.dart
+ M lib/screens/file_preview_screen.dart
+ D lib/screens/home_screen.dart
+ M lib/screens/marketplace_feed.dart
+ M lib/screens/profile_screen.dart
+ M lib/screens/resource_detail_screen.dart
+ M lib/screens/upload_resource_screen.dart
+ M linux/flutter/generated_plugin_registrant.cc
+ M linux/flutter/generated_plugins.cmake
+ M macos/Flutter/GeneratedPluginRegistrant.swift
+ D patch_main.dart
+ M pubspec.lock
+ M pubspec.yaml
+ M test/widget_test.dart
+ M web/favicon.png
+ M web/icons/Icon-192.png
+ M web/icons/Icon-512.png
+ M web/icons/Icon-maskable-192.png
+ M web/icons/Icon-maskable-512.png
+ M web/manifest.json
+ M windows/flutter/generated_plugin_registrant.cc
+ M windows/flutter/generated_plugins.cmake
+?? .firebase/
+?? android/app/src/main/res/drawable-hdpi/
+?? android/app/src/main/res/drawable-mdpi/
+?? android/app/src/main/res/drawable-night-hdpi/
+?? android/app/src/main/res/drawable-night-mdpi/
+?? android/app/src/main/res/drawable-night-xhdpi/
+?? android/app/src/main/res/drawable-night-xxhdpi/
+?? android/app/src/main/res/drawable-night-xxxhdpi/
+?? android/app/src/main/res/drawable-v21/background.png
+?? android/app/src/main/res/drawable-xhdpi/
+?? android/app/src/main/res/drawable-xxhdpi/
+?? android/app/src/main/res/drawable-xxxhdpi/
+?? android/app/src/main/res/drawable/background.png
+?? android/app/src/main/res/values-night-v31/
+?? android/app/src/main/res/values-v31/
+?? apply_chat_button_patch.py
+?? apply_phone_field_patch.py
+?? apply_referral_patch.py
+?? apply_vault_feed_patch.py
+?? assets/images/
+?? final_cleanup_patch.py
+?? fix_vault_db.py
+?? ios/Runner/Assets.xcassets/LaunchBackground.imageset/
+?? lib/models/academic_resource.dart.backup
+?? lib/screens/support_screen.dart
+?? project_code_dump.txt
+?? project_dump.txt
+?? project_snapshot.txt
+?? sansphere-source.zip
+?? vault_module.zip
+
+================ PUBSPEC.YAML ================
+name: sansphere_android
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase Core
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.6.12
+  firebase_storage: ^12.0.0
+  url_launcher: ^6.3.1
+  share_plus: ^10.1.4
+
+  
+  # Utilities
+  file_picker: ^8.0.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.8
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/SS.png"
+  web:
+    generate: true
+    image_path: "assets/images/SS.png"
+    background_color: "#F8FAFC"
+    theme_color: "#0F172A"
+
+flutter_native_splash:
+  color: "#F8FAFC"
+  image: "assets/images/SS.png"
+  android_12:
+    image: "assets/images/SS.png"
+    color: "#F8FAFC"
+  web: false
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+
+================ LIB FILES ================
+
+============================================================
+FILE: lib/firebase_options.dart
+============================================================
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not configured for this platform.',
+        );
+    }
+  }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: "AIzaSyB64J31BsWmjtltHKAX1C7pAyAi_7hnM5I",
+    authDomain: "gen-lang-client-0227443307.firebaseapp.com",
+    projectId: "gen-lang-client-0227443307",
+    storageBucket: "gen-lang-client-0227443307.firebasestorage.app",
+    messagingSenderId: "1070172783321",
+    appId: "1:1070172783321:web:aed160f259e7195ffb74c8",
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: "AIzaSyB64J31BsWmjtltHKAX1C7pAyAi_7hnM5I",
+    authDomain: "gen-lang-client-0227443307.firebaseapp.com",
+    projectId: "gen-lang-client-0227443307",
+    storageBucket: "gen-lang-client-0227443307.firebasestorage.app",
+    messagingSenderId: "1070172783321",
+    appId: "1:1070172783321:android:e15c328b0be774e6fbb74c8",
+  );
+}
+============================================================
+FILE: lib/global_state.dart
+============================================================
+import 'package:flutter/foundation.dart';
+import 'models/academic_resource.dart';
+
+class GlobalState extends ChangeNotifier {
+  static Map<String, double> creatorEarnings = {};
+  static double currentUserWallet = 0.0;
+  static double platformProcessingPool = 0.0;
+
+  final List<AcademicResource> _resources = [];
+
+  List<AcademicResource> get resources => List.unmodifiable(_resources);
+
+  void addResource(dynamic resource) {
+    if (resource is AcademicResource) {
+      _resources.add(resource);
+    } else if (resource is Map<String, dynamic>) {
+      _resources.add(AcademicResource.fromMap(resource));
+    }
+    notifyListeners();
+  }
+
+  bool removeResourceById(String id) {
+    final initialLength = _resources.length;
+    _resources.removeWhere((item) => item.id == id || item.customDocId == id);
+    final removed = initialLength != _resources.length;
+    if (removed) {
+      notifyListeners();
+    }
+    return removed;
+  }
+
+  // ==========================================================
+  // Academic Vault / Marketplace filter compatibility API
+  // ==========================================================
+
+  String _academicSearchQuery = '';
+
+  ResourceCategory? _academicSelectedCategory;
+
+  String get searchQuery => _academicSearchQuery;
+
+  ResourceCategory? get selectedCategory => _academicSelectedCategory;
+
+  List<AcademicResource> get filteredResources {
+    final query = _academicSearchQuery.trim().toLowerCase();
+
+    return _resources.where((resource) {
+      final matchesSearch =
+          query.isEmpty ||
+          resource.title.toLowerCase().contains(query) ||
+          resource.subject.toLowerCase().contains(query) ||
+          resource.description.toLowerCase().contains(query) ||
+          resource.uploaderName.toLowerCase().contains(query) ||
+          resource.tags.any((tag) => tag.toLowerCase().contains(query));
+
+      final matchesCategory =
+          _academicSelectedCategory == null ||
+          resource.category == _academicSelectedCategory;
+
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
+
+  void setSearchQuery(String value) {
+    _academicSearchQuery = value;
+    notifyListeners();
+  }
+
+  void setCategoryFilter(ResourceCategory? value) {
+    _academicSelectedCategory = value;
+    notifyListeners();
+  }
+
+  void resetFilters() {
+    _academicSearchQuery = '';
+    _academicSelectedCategory = null;
+    notifyListeners();
+  }
+}
+
+============================================================
+FILE: lib/main.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'firebase_options.dart'; 
+import 'global_state.dart';
+import 'models/academic_resource.dart';
+import 'screens/upload_resource_screen.dart';
+import 'screens/resource_detail_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/reels_screen.dart';
+import 'screens/chat_list_screen.dart';
+import 'screens/profile_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const SanSphereApp());
+}
+
+class SanSphereApp extends StatelessWidget {
+  const SanSphereApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'SanSphere',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        primaryColor: const Color(0xFF2563EB),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2563EB),
+          primary: const Color(0xFF2563EB),
+          surface: const Color(0xFFF8FAFC),
+        ),
+      ),
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+            ),
+          );
+        }
+        if (snapshot.hasData) {
+          return const MainNavigationScreen(isGuestMode: false);
+        }
+        return const LoginScreen();
+      },
+    );
+  }
+}
+
+class MainNavigationScreen extends StatefulWidget {
+  final bool isGuestMode;
+  
+  const MainNavigationScreen({super.key, required this.isGuestMode});
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+  final GlobalState _globalState = GlobalState();
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      AcademicVaultFeedScreen(globalState: _globalState),
+      const ReelsScreen(),
+      const ChatListScreen(),
+      const ProfileScreen(),
+    ];
+
+    return Scaffold(
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF2563EB),
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded), 
+            label: 'Vault',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.video_library_rounded), 
+            label: 'Reels',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_rounded), 
+            label: 'Chat',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded), 
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AcademicVaultFeedScreen extends StatefulWidget {
+  final GlobalState globalState;
+  const AcademicVaultFeedScreen({super.key, required this.globalState});
+
+  @override
+  State<AcademicVaultFeedScreen> createState() => _AcademicVaultFeedScreenState();
+}
+
+class _AcademicVaultFeedScreenState extends State<AcademicVaultFeedScreen> {
+  String _selectedCampusFilter = 'SITRC';
+  String _selectedCategoryFilter = 'All';
+  bool _isAuthenticating = true;
+  bool _showSearchBar = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  final List<String> _campuses = ['SITRC', 'SIEM', 'SIPS', 'SU'];
+  final List<String> _categories = ['All', 'Notes', 'Code', 'Syllabus', 'PYQs'];
+
+  final FirebaseFirestore _userFirestore =
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'sansphere');
+  final FirebaseFirestore _vaultFirestore =
+      FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'sanvault');
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeDevSession();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeDevSession() async {
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
+    } catch (e) {
+      debugPrint("Auth configuration warning: $e");
+    } finally {
+      if (mounted) setState(() => _isAuthenticating = false);
+    }
+  }
+
+  Color _getCategoryColor(String type) {
+    switch (type) {
+      case 'Code':
+        return Colors.blue;
+      case 'Notes':
+        return Colors.orange;
+      case 'Syllabus':
+        return Colors.purple;
+      case 'PYQs':
+        return Colors.green;
+      default:
+        return const Color(0xFF2563EB);
+    }
+  }
+
+  Future<void> _handleOpenViaLinkOrSearch(String input) async {
+    final trimmed = input.trim();
+    if (trimmed.isEmpty) return;
+
+    String docId = trimmed;
+
+    if (trimmed.contains('sansphere.app/vault/')) {
+      final uri = Uri.tryParse(trimmed);
+      if (uri != null) {
+        docId = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : trimmed;
+      }
+    }
+
+    try {
+      final query = await _vaultFirestore
+          .collection('academic_vault')
+          .where('customDocId', isEqualTo: docId)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) {
+        setState(() => _searchQuery = trimmed);
+        return;
+      }
+
+      final resource = AcademicResource.fromMap(
+        query.docs.first.data()..['id'] = query.docs.first.id,
+      );
+
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResourceDetailScreen(
+            resource: resource,
+            globalState: widget.globalState,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error searching resource: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isAuthenticating) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF2563EB)),
+        ),
+      );
+    }
+
+    Query query = _vaultFirestore
+        .collection('academic_vault')
+        .orderBy('createdAt', descending: true)
+        .where('college', isEqualTo: _selectedCampusFilter);
+
+    if (_selectedCategoryFilter != 'All') {
+      query = query.where('type', isEqualTo: _selectedCategoryFilter);
+    }
+
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'SanSphere Vault',
+          style: TextStyle(
+            fontWeight: FontWeight.w900, 
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          if (currentUid != null)
+            StreamBuilder<DocumentSnapshot>(
+              stream: _userFirestore.collection('users').doc(currentUid).snapshots(),
+              builder: (context, snapshot) {
+                final coins = (snapshot.data?.data() as Map<String, dynamic>?)?['sanCoins'] ?? 0;
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED), 
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.stars_rounded, color: Colors.amber, size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$coins', 
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          IconButton(
+            icon: Icon(
+              _showSearchBar ? Icons.close : Icons.search, 
+              color: const Color(0xFF0F172A),
+            ),
+            onPressed: () => setState(() {
+              _showSearchBar = !_showSearchBar;
+              if (!_showSearchBar) {
+                _searchController.clear();
+                _searchQuery = '';
+              }
+            }),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Color(0xFF0F172A)),
+            onPressed: _handleLogout,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Column(
+        children: [
+          if (_showSearchBar)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search by name, Doc ID, or paste a share link…',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  isDense: true,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward),
+                    onPressed: () => _handleOpenViaLinkOrSearch(_searchController.text),
+                  ),
+                ),
+                onSubmitted: _handleOpenViaLinkOrSearch,
+                onChanged: (v) => setState(() => _searchQuery = v),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                DropdownButton<String>(
+                  value: _selectedCampusFilter,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                  style: const TextStyle(
+                    fontSize: 18, 
+                    fontWeight: FontWeight.bold, 
+                    color: Color(0xFF0F172A),
+                  ),
+                  underline: const SizedBox(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() => _selectedCampusFilter = newValue);
+                    }
+                  },
+                  items: _campuses.map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value, 
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(
+                        builder: (_) => UploadResourceScreen(globalState: widget.globalState),
+                      ),
+                    ).then((_) => setState(() {}));
+                  },
+                  icon: const Icon(Icons.add_rounded, color: Colors.white),
+                  label: const Text('Publish', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB), 
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 38,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final cat = _categories[index];
+                final isSelected = _selectedCategoryFilter == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    label: Text(
+                      cat,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedColor: const Color(0xFF0F172A),
+                    onSelected: (_) => setState(() => _selectedCategoryFilter = cat),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: query.snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error loading feed: ${snapshot.error}'));
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                var docs = snapshot.data?.docs ?? [];
+
+                if (_searchQuery.trim().isNotEmpty) {
+                  final q = _searchQuery.trim().toLowerCase();
+                  docs = docs.where((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final title = (data['title'] ?? '').toString().toLowerCase();
+                    final docId = (data['customDocId'] ?? '').toString().toLowerCase();
+                    final fileName = (data['fileName'] ?? '').toString().toLowerCase();
+                    return title.contains(q) || docId.contains(q) || fileName.contains(q);
+                  }).toList();
+                }
+
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No academic materials found.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    data['id'] = docs[index].id;
+                    final resource = AcademicResource.fromMap(data);
+                    final Color accent = _getCategoryColor(resource.type);
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white, 
+                        borderRadius: BorderRadius.circular(16), 
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, 
+                          vertical: 4,
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor: accent.withOpacity(0.12),
+                          child: Icon(Icons.description_rounded, color: accent),
+                        ),
+                        title: Text(
+                          resource.title, 
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          '${resource.college} • ID: ${resource.customDocId}', 
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        trailing: Text(
+                          resource.price <= 0 
+                              ? "Free" 
+                              : "₹${resource.price.toStringAsFixed(0)}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            color: resource.price <= 0 
+                                ? Colors.green 
+                                : const Color(0xFF2563EB),
+                          ),
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ResourceDetailScreen(
+                              resource: resource,
+                              globalState: widget.globalState,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+============================================================
+FILE: lib/models/academic_resource.dart
+============================================================
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+enum ResourceCategory {
+  lectureNotes,
+  pyq,
+  questionBank,
+  testPaper,
+  textbook,
+  questionPaper,
+  labManual,
+  assignment,
+  other,
+}
+
+extension ResourceCategoryExtension on ResourceCategory {
+  String get displayName {
+    switch (this) {
+      case ResourceCategory.lectureNotes:
+        return 'Lecture Notes';
+      case ResourceCategory.pyq:
+        return 'Previous Year Questions (PYQ)';
+      case ResourceCategory.questionBank:
+        return 'Question Bank';
+      case ResourceCategory.testPaper:
+        return 'Test Paper';
+      case ResourceCategory.textbook:
+        return 'Textbook';
+      case ResourceCategory.questionPaper:
+        return 'Question Paper';
+      case ResourceCategory.labManual:
+        return 'Lab Manual';
+      case ResourceCategory.assignment:
+        return 'Assignment';
+      case ResourceCategory.other:
+        return 'Other';
+    }
+  }
+}
+
+class AcademicResource {
+  final String id;
+  final String customDocId;
+  final String title;
+  final String description;
+  final String subject;
+  final String college;
+  final String department;
+  final String type;
+  final double price;
+  final String fileUrl;
+  final String uploaderId;
+  final String uploaderName;
+  final DateTime createdAt;
+
+  // Academic-vault compatibility fields.
+  final int semester;
+  final ResourceCategory category;
+  final String fileName;
+  final double fileSizeMb;
+  final DateTime uploadDate;
+  final int downloadCount;
+  final double rating;
+  final List<String> tags;
+
+  final String subtitle;
+  final String authorUid;
+  final String authorName;
+  final double fileSize;
+  final String meta;
+  AcademicResource({
+    this.subtitle = '',
+    this.authorUid = '',
+    this.authorName = 'Anonymous',
+    this.fileSize = 0.0,
+    this.meta = '',
+    this.id = '',
+    this.customDocId = '',
+    this.title = '',
+    this.description = '',
+    this.subject = '',
+    this.college = '',
+    this.department = '',
+    this.type = 'Lecture Notes',
+    this.price = 0.0,
+    this.fileUrl = '',
+    this.uploaderId = '',
+    this.uploaderName = 'Anonymous',
+    DateTime? createdAt,
+    this.semester = 1,
+    this.category = ResourceCategory.lectureNotes,
+    this.fileName = '',
+    this.fileSizeMb = 0.0,
+    DateTime? uploadDate,
+    this.downloadCount = 0,
+    this.rating = 0.0,
+    this.tags = const [],
+  }) : createdAt = createdAt ?? uploadDate ?? DateTime.now(),
+       uploadDate = uploadDate ?? createdAt ?? DateTime.now();
+
+  factory AcademicResource.fromMap(Map<String, dynamic> map, [String? docId]) {
+    final dynamic timestamp = map['createdAt'] ?? map['uploadDate'];
+
+    DateTime parsedDate = DateTime.now();
+
+    if (timestamp is Timestamp) {
+      parsedDate = timestamp.toDate();
+    } else if (timestamp is DateTime) {
+      parsedDate = timestamp;
+    } else if (timestamp is String) {
+      parsedDate = DateTime.tryParse(timestamp) ?? DateTime.now();
+    }
+
+    ResourceCategory parsedCategory = ResourceCategory.lectureNotes;
+
+    final categoryValue = map['category'];
+
+    if (categoryValue is String) {
+      parsedCategory = ResourceCategory.values.firstWhere(
+        (category) =>
+            category.name == categoryValue ||
+            category.displayName == categoryValue,
+        orElse: () => ResourceCategory.lectureNotes,
+      );
+    }
+
+    final dynamic tagsValue = map['tags'];
+
+    final List<String> parsedTags = tagsValue is List
+        ? tagsValue.map((e) => e.toString()).toList()
+        : <String>[];
+
+    return AcademicResource(
+      id: docId ?? map['id']?.toString() ?? '',
+      customDocId: map['customDocId']?.toString() ?? '',
+      title: map['title']?.toString() ?? '',
+      subtitle: map['subtitle']?.toString() ?? '',
+      authorUid:
+          map['authorUid']?.toString() ?? map['uploaderId']?.toString() ?? '',
+      authorName:
+          map['authorName']?.toString() ??
+          map['uploaderName']?.toString() ??
+          'Anonymous',
+      meta: map['meta']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      subject: map['subject']?.toString() ?? '',
+      college: map['college']?.toString() ?? '',
+      department: map['department']?.toString() ?? '',
+      type:
+          map['type']?.toString() ??
+          map['category']?.toString() ??
+          'Lecture Notes',
+      price: _toDouble(map['price']),
+      fileUrl: map['fileUrl']?.toString() ?? '',
+      uploaderId:
+          map['uploaderId']?.toString() ?? map['authorUid']?.toString() ?? '',
+      uploaderName:
+          map['uploaderName']?.toString() ??
+          map['authorName']?.toString() ??
+          'Anonymous',
+      createdAt: parsedDate,
+      semester: _toInt(map['semester'], 1),
+      category: parsedCategory,
+      fileName: map['fileName']?.toString() ?? '',
+      fileSizeMb: _toDouble(map['fileSizeMb'] ?? map['fileSize']),
+      uploadDate: parsedDate,
+      downloadCount: _toInt(map['downloadCount'], 0),
+      rating: _toDouble(map['rating']),
+      tags: parsedTags,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'customDocId': customDocId,
+      'title': title,
+      'description': description,
+      'subject': subject,
+      'college': college,
+      'department': department,
+      'type': type,
+      'price': price,
+      'fileUrl': fileUrl,
+      'uploaderId': uploaderId,
+      'uploaderName': uploaderName,
+      'createdAt': Timestamp.fromDate(createdAt),
+
+      // Academic-vault fields.
+      'semester': semester,
+      'category': category.name,
+      'fileName': fileName,
+      'fileSizeMb': fileSizeMb,
+      'fileSize': fileSize,
+      'uploadDate': Timestamp.fromDate(uploadDate),
+      'downloadCount': downloadCount,
+      'rating': rating,
+      'tags': tags,
+    };
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  static int _toInt(dynamic value, [int fallback = 0]) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+}
+
+============================================================
+FILE: lib/screens/auth/login_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../main.dart';
+import 'register_screen.dart';
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _identifierController = TextEditingController(); // Accepts both Email or Phone
+  final _passwordController = TextEditingController();
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _identifierController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleAuthentication() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    String input = _identifierController.text.trim();
+    String password = _passwordController.text.trim();
+    String resolvedEmail = input;
+
+    try {
+      // If user inputs a phone number instead of an email, look up the email tied to it
+      if (!input.contains('@')) {
+        final phoneQuery = await _firestore
+            .collection('users')
+            .where('phone', isEqualTo: input)
+            .limit(1)
+            .get();
+
+        if (phoneQuery.docs.isEmpty) {
+          throw FirebaseAuthException(
+            code: 'user-not-found',
+            message: 'No registered user found containing this phone number.',
+          );
+        }
+        resolvedEmail = phoneQuery.docs.first.get('email');
+      }
+
+      // Execute Firebase Authentication Sign In
+      await _auth.signInWithEmailAndPassword(email: resolvedEmail, password: password);
+
+      if (!mounted) return;
+      _navigateToDashboard(isGuest: false);
+
+    } on FirebaseAuthException catch (e) {
+      _showNotificationSnackBar(e.message ?? "Authentication failed.", isError: true);
+    } catch (e) {
+      _showNotificationSnackBar("Authentication Error: ${e.toString()}", isError: true);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _navigateToDashboard({required bool isGuest}) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isGuest ? "Logged in as Guest Explorer Mode" : "Welcome back to SANSPHERE!"),
+        backgroundColor: isGuest ? Colors.orange : Colors.green,
+      ),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MainNavigationScreen(isGuestMode: isGuest),
+      ),
+    );
+  }
+
+  void _showNotificationSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+        backgroundColor: isError ? const Color(0xFF1E293B) : Colors.blueAccent,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [Colors.blueAccent.shade700, Colors.blue.shade900], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "SANSPHERE",
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blueAccent, letterSpacing: 1.5),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "Learn, achieve and earn",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey),
+                      ),
+                      const Text(
+                        "Presented by KK",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.blueGrey),
+                      ),
+                      const SizedBox(height: 28),
+                      TextFormField(
+                        controller: _identifierController,
+                        decoration: const InputDecoration(
+                          labelText: "University Email or Phone Number",
+                          prefixIcon: Icon(Icons.person_outline),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                        ),
+                        validator: (value) => value!.isEmpty ? "Enter Email or Phone number" : null,
+                      ),
+                      const SizedBox(height: 18),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
+                          labelText: "Password",
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                          border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                        ),
+                        validator: (value) => value!.isEmpty ? "Please enter your password" : null,
+                      ),
+                      const SizedBox(height: 20),
+                      _isLoading
+                          ? const CircularProgressIndicator()
+                          : Column(
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueAccent,
+                                    foregroundColor: Colors.white,
+                                    minimumSize: const Size(double.infinity, 52),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: _handleAuthentication,
+                                  child: const Text("Secure Sign In", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(height: 10),
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(double.infinity, 45),
+                                    side: const BorderSide(color: Colors.grey),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  onPressed: () => _navigateToDashboard(isGuest: true),
+                                  child: const Text("Browse as Guest", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)),
+                                ),
+                              ],
+                            ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen()));
+                        },
+                        child: const Text("Don't have an account? Sign Up", style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+============================================================
+FILE: lib/screens/auth/register_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import '../../main.dart'; // FIXED: Stepped up two levels to find your root main.dart file
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  
+  // Explicitly targeting the custom database named 'sansphere'
+  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'sansphere',
+  );
+
+  // Form Input Controllers
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _collegeController = TextEditingController();
+  final _branchController = TextEditingController();
+  final _yearController = TextEditingController();
+  final _referralController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  Future<void> _handleRegistration() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Create the user authentication entry in Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // 2. CONNECT TO FIRESTORE: Write initial profile documents matching User UID
+        final String myReferralCode = user.uid.substring(0, 8).toUpperCase();
+
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullName': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'college': _collegeController.text.trim(),
+          'branch': _branchController.text.trim(),
+          'year': _yearController.text.trim(),
+          'bio': 'Welcome to my Sansphere profile!',
+          'specification': 'Not Specified Yet',
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastProfileUpdate': null,
+          'sanCoins': 0,
+          'referralCode': myReferralCode,
+          'phoneNumber': '',
+          'showPhoneNumber': false,
+        });
+
+        final String enteredCode = _referralController.text.trim().toUpperCase();
+        if (enteredCode.isNotEmpty && enteredCode != myReferralCode) {
+          final referrerQuery = await _firestore
+              .collection('users')
+              .where('referralCode', isEqualTo: enteredCode)
+              .limit(1)
+              .get();
+
+          if (referrerQuery.docs.isNotEmpty) {
+            final referrerDoc = referrerQuery.docs.first;
+            await _firestore.collection('users').doc(referrerDoc.id).update({
+              'sanCoins': FieldValue.increment(100),
+            });
+            await _firestore.collection('referrals').add({
+              'referrerUid': referrerDoc.id,
+              'newUserUid': user.uid,
+              'coinsAwarded': 100,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        }
+
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Account registered and synchronized successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // 3. FIXED: Removed 'const' to allow dynamic navigation execution safely
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => MainNavigationScreen(isGuestMode: false),
+          ),
+          (Route<dynamic> route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Authentication failed.";
+      if (e.code == 'weak-password') {
+        errorMessage = "The password provided is too weak.";
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = "An account already exists for that email address.";
+      } else if (e.code == 'invalid-email') {
+        errorMessage = "Please insert a valid email destination mapping.";
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Firestore Error: ${e.toString()}"), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _collegeController.dispose();
+    _branchController.dispose();
+    _yearController.dispose();
+    _referralController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text("Create SANSPHERE Account", style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
+        backgroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Join the Campus Network",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Sign up to establish your academic synchronization profiles, records, and vault features.",
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+                const SizedBox(height: 24),
+
+                // Full Name Input
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: "Full Name",
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Please enter your name" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Email Input
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: "Email Address",
+                    prefixIcon: const Icon(Icons.alternate_email_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || !val.contains('@') ? "Please provide a valid email address" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Password Input
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: "Secure Password",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.length < 6 ? "Password must exceed 5 characters" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // College Field
+                TextFormField(
+                  controller: _collegeController,
+                  decoration: InputDecoration(
+                    labelText: "College / Institution",
+                    prefixIcon: const Icon(Icons.school_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Please supply your institute name" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Branch Field
+                TextFormField(
+                  controller: _branchController,
+                  decoration: InputDecoration(
+                    labelText: "Academic Branch (e.g., Computer Engineering)",
+                    prefixIcon: const Icon(Icons.engineering_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Specify your engineering department branch" : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Current Year Field
+                TextFormField(
+                  controller: _yearController,
+                  decoration: InputDecoration(
+                    labelText: "Current Class Year (e.g., 2nd Year)",
+                    prefixIcon: const Icon(Icons.calendar_today_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? "Provide your current enrollment class status" : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _referralController,
+                  decoration: InputDecoration(
+                    labelText: "Referral Code (optional)",
+                    prefixIcon: const Icon(Icons.card_giftcard_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Submission Handler Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    onPressed: _isLoading ? null : _handleRegistration,
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Complete Sign Up", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+============================================================
+FILE: lib/screens/chat_list_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+final _chatFirestore = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'sanvault');
+
+String _chatIdFor(String uidA, String uidB) {
+  final sorted = [uidA, uidB]..sort();
+  return "${sorted[0]}_${sorted[1]}";
+}
+
+Future<void> startChatWithUser(
+  BuildContext context, {
+  required String peerUid,
+  required String peerName,
+  String? docTitle,
+  String? docId,
+}) async {
+  final me = FirebaseAuth.instance.currentUser;
+  if (me == null || me.uid == peerUid) return;
+
+  final chatId = _chatIdFor(me.uid, peerUid);
+  final chatRef = _chatFirestore.collection('chats').doc(chatId);
+  final snap = await chatRef.get();
+
+  String myName = "Student";
+  try {
+    final myDoc = await _chatFirestore.collection('users').doc(me.uid).get();
+    myName = myDoc.data()?['fullName'] ?? "Student";
+  } catch (_) {}
+
+  if (!snap.exists) {
+    await chatRef.set({
+      'participants': [me.uid, peerUid],
+      'participantNames': {me.uid: myName, peerUid: peerName},
+      'lastMessage': docTitle != null ? "Started a chat about \"$docTitle\"" : "Chat started",
+      'lastMessageAt': FieldValue.serverTimestamp(),
+      if (docTitle != null) 'docTitle': docTitle,
+      if (docId != null) 'docId': docId,
+    });
+  }
+
+  if (!context.mounted) return;
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => ChatConversationRoom(chatId: chatId, peerUid: peerUid, peerName: peerName)),
+  );
+}
+
+class ChatListScreen extends StatelessWidget {
+  const ChatListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final myUid = FirebaseAuth.instance.currentUser?.uid;
+    if (myUid == null) {
+      return const Scaffold(body: Center(child: Text("Please log in to view chats.")));
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("SANSPHERE Chats", style: TextStyle(fontWeight: FontWeight.bold))),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _chatFirestore
+            .collection('chats')
+            .where('participants', arrayContains: myUid)
+            .orderBy('lastMessageAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final chats = snapshot.data?.docs ?? [];
+          if (chats.isEmpty) {
+            return const Center(child: Text("No conversations yet — message a seller from a resource page."));
+          }
+
+          return ListView.builder(
+            itemCount: chats.length,
+            itemBuilder: (context, idx) {
+              final data = chats[idx].data() as Map<String, dynamic>;
+              final participants = List<String>.from(data['participants'] ?? []);
+              final peerUid = participants.firstWhere((u) => u != myUid, orElse: () => '');
+              final names = Map<String, dynamic>.from(data['participantNames'] ?? {});
+              final peerName = names[peerUid] ?? 'User';
+              final lastMessage = data['lastMessage'] ?? '';
+              final docTitle = data['docTitle'];
+
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+                  child: Text(peerName.isNotEmpty ? peerName[0].toUpperCase() : '?'),
+                ),
+                title: Text(peerName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(
+                  docTitle != null ? "Re: $docTitle • $lastMessage" : lastMessage,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChatConversationRoom(chatId: chats[idx].id, peerUid: peerUid, peerName: peerName),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ChatConversationRoom extends StatefulWidget {
+  final String chatId;
+  final String peerUid;
+  final String peerName;
+  const ChatConversationRoom({super.key, required this.chatId, required this.peerUid, required this.peerName});
+
+  @override
+  State<ChatConversationRoom> createState() => _ChatConversationRoomState();
+}
+
+class _ChatConversationRoomState extends State<ChatConversationRoom> {
+  final _msgCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
+
+  @override
+  void dispose() {
+    _msgCtrl.dispose();
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _msgCtrl.text.trim();
+    if (text.isEmpty) return;
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+
+    _msgCtrl.clear();
+    final chatRef = _chatFirestore.collection('chats').doc(widget.chatId);
+
+    await chatRef.collection('messages').add({
+      'text': text,
+      'senderUid': me.uid,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await chatRef.set({
+      'lastMessage': text,
+      'lastMessageAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> _showPeerInfo() async {
+    final doc = await _chatFirestore.collection('users').doc(widget.peerUid).get();
+    final data = doc.data();
+    final showPhone = data?['showPhoneNumber'] == true;
+    final phone = data?['phoneNumber'] ?? '';
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(widget.peerName),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("College: ${data?['college'] ?? 'N/A'}"),
+            const SizedBox(height: 8),
+            Text(
+              showPhone && phone.toString().isNotEmpty
+                  ? "Phone: $phone"
+                  : "Phone number is private",
+              style: TextStyle(color: showPhone ? Colors.black87 : Colors.grey, fontStyle: showPhone ? FontStyle.normal : FontStyle.italic),
+            ),
+          ],
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("Close"))],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final myUid = FirebaseAuth.instance.currentUser?.uid;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Chatting with ${widget.peerName}"),
+        actions: [IconButton(icon: const Icon(Icons.info_outline), onPressed: _showPeerInfo)],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _chatFirestore
+                  .collection('chats')
+                  .doc(widget.chatId)
+                  .collection('messages')
+                  .orderBy('createdAt', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final messages = snapshot.data?.docs ?? [];
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollCtrl.hasClients) {
+                    _scrollCtrl.jumpTo(_scrollCtrl.position.maxScrollExtent);
+                  }
+                });
+
+                return ListView.builder(
+                  controller: _scrollCtrl,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, i) {
+                    final data = messages[i].data() as Map<String, dynamic>;
+                    final isMe = data['senderUid'] == myUid;
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                        decoration: BoxDecoration(
+                          color: isMe ? Colors.blueAccent : Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12).copyWith(
+                            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(12),
+                            bottomLeft: !isMe ? const Radius.circular(0) : const Radius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          data['text'] ?? '',
+                          style: TextStyle(color: isMe ? Colors.white : Colors.black87),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _msgCtrl,
+                    decoration: InputDecoration(
+                      hintText: "Type something...",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(icon: const Icon(Icons.send, color: Colors.blueAccent), onPressed: _sendMessage),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+============================================================
+FILE: lib/screens/file_preview_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import '../models/academic_resource.dart';
+
+class FilePreviewScreen extends StatelessWidget {
+  final AcademicResource resource;
+
+  const FilePreviewScreen({
+    Key? key,
+    required this.resource,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(resource.fileName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'Download File',
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Downloading ${resource.fileName}...'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Banner Banner Header
+          Container(
+            color: Theme.of(context).primaryColor.withOpacity(0.08),
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Previewing document: ${resource.title}',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Simulated Document View Canvas
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'DOCUMENT PREVIEW • PAGE 1 OF 12',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      resource.title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Subject: ${resource.subject} | Department: ${resource.department}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Divider(height: 32),
+                    Text(
+                      resource.description,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.6,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '1. Executive Overview',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+                      style: TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '2. Core Concepts & Definitions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+                      style: TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+============================================================
+FILE: lib/screens/marketplace_feed.dart
+============================================================
+import 'package:flutter/material.dart';
+import '../global_state.dart';
+import '../models/academic_resource.dart';
+import 'resource_detail_screen.dart';
+import 'upload_resource_screen.dart';
+
+class MarketplaceFeedScreen extends StatefulWidget {
+  final GlobalState globalState;
+
+  const MarketplaceFeedScreen({Key? key, required this.globalState})
+    : super(key: key);
+
+  @override
+  State<MarketplaceFeedScreen> createState() => _MarketplaceFeedScreenState();
+}
+
+class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.text = widget.globalState.searchQuery;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.globalState,
+      builder: (context, _) {
+        final resources = widget.globalState.filteredResources;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Academic Resource Hub'),
+            elevation: 2,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Reset Filters',
+                onPressed: () {
+                  _searchController.clear();
+                  widget.globalState.resetFilters();
+                },
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Search & Filter Header Section
+              Container(
+                padding: const EdgeInsets.all(12.0),
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                child: Column(
+                  children: [
+                    // Search Bar
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search notes, subjects, tags...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  widget.globalState.setSearchQuery('');
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (val) {
+                        widget.globalState.setSearchQuery(val);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Category Chips Filter
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          FilterChip(
+                            label: const Text('All Categories'),
+                            selected:
+                                widget.globalState.selectedCategory == null,
+                            onSelected: (_) {
+                              widget.globalState.setCategoryFilter(null);
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ...ResourceCategory.values.map((cat) {
+                            final isSelected =
+                                widget.globalState.selectedCategory == cat;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: FilterChip(
+                                label: Text(_formatCategoryName(cat)),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  widget.globalState.setCategoryFilter(
+                                    selected ? cat : null,
+                                  );
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Results Counter
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Found ${resources.length} resource(s)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main Resource List
+              Expanded(
+                child: resources.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.folder_off_outlined,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No matching resources found.',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                widget.globalState.resetFilters();
+                              },
+                              child: const Text('Clear Filters'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: resources.length,
+                        padding: const EdgeInsets.all(12),
+                        itemBuilder: (context, index) {
+                          final resource = resources[index];
+                          return ResourceCard(
+                            resource: resource,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ResourceDetailScreen(
+                                    resource: resource,
+                                    globalState: widget.globalState,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      UploadResourceScreen(globalState: widget.globalState),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Upload Resource'),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatCategoryName(ResourceCategory cat) {
+    switch (cat) {
+      case ResourceCategory.questionBank:
+        return 'Question Bank';
+      case ResourceCategory.pyq:
+        return 'PYQ';
+      case ResourceCategory.lectureNotes:
+        return 'Lecture Notes';
+      case ResourceCategory.textbook:
+        return 'Textbook';
+      case ResourceCategory.questionPaper:
+        return 'Question Paper';
+      case ResourceCategory.testPaper:
+        return 'Test Paper';
+      case ResourceCategory.labManual:
+        return 'Lab Manual';
+      case ResourceCategory.assignment:
+        return 'Assignment';
+      case ResourceCategory.other:
+        return 'Other';
+    }
+  }
+}
+
+/// Card component to display individual academic resources
+class ResourceCard extends StatelessWidget {
+  final AcademicResource resource;
+  final VoidCallback onTap;
+
+  const ResourceCard({Key? key, required this.resource, required this.onTap})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getCategoryIcon(resource.category),
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          resource.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${resource.subject} • Sem ${resource.semester}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                resource.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey[800], fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${resource.rating}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.download, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${resource.downloadCount}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${resource.fileSizeMb} MB',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(ResourceCategory cat) {
+    switch (cat) {
+      case ResourceCategory.questionBank:
+        return Icons.quiz;
+      case ResourceCategory.pyq:
+        return Icons.description;
+      case ResourceCategory.lectureNotes:
+        return Icons.menu_book;
+      case ResourceCategory.textbook:
+        return Icons.book;
+      case ResourceCategory.questionPaper:
+        return Icons.quiz;
+      case ResourceCategory.testPaper:
+        return Icons.assignment;
+      case ResourceCategory.labManual:
+        return Icons.science;
+      case ResourceCategory.assignment:
+        return Icons.assignment;
+      case ResourceCategory.other:
+        return Icons.insert_drive_file;
+    }
+  }
+}
+
+============================================================
+FILE: lib/screens/profile_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
+import '../global_state.dart';
+import 'support_screen.dart';
+import 'auth/login_screen.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _firestore = FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: 'sansphere');
+  bool _isEditing = false;
+  bool _isSaving = false;
+  Map<String, dynamic>? userData;
+
+  final _bioController = TextEditingController();
+  final _specController = TextEditingController();
+  final _collegeController = TextEditingController();
+  final _branchController = TextEditingController();
+  final _yearController = TextEditingController();
+  final _phoneController = TextEditingController();
+  bool _showPhoneNumber = false;
+
+  @override
+  void dispose() {
+    _bioController.dispose();
+    _specController.dispose();
+    _collegeController.dispose();
+    _branchController.dispose();
+    _yearController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  void _loadIntoControllers(Map<String, dynamic> data) {
+    _bioController.text = data['bio'] ?? '';
+    _specController.text = data['specification'] ?? '';
+    _collegeController.text = data['college'] ?? '';
+    _branchController.text = data['branch'] ?? '';
+    _yearController.text = data['year'] ?? '';
+    _phoneController.text = data['phoneNumber'] ?? '';
+    _showPhoneNumber = data['showPhoneNumber'] == true;
+  }
+
+  bool _canEditNow(Map<String, dynamic> data) {
+    final Timestamp? last = data['lastProfileUpdate'];
+    if (last == null) return true;
+    final daysSince = DateTime.now().difference(last.toDate()).inDays;
+    return daysSince >= 30;
+  }
+
+  Future<void> _saveProfileChanges(String uid) async {
+    setState(() => _isSaving = true);
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'bio': _bioController.text.trim(),
+        'specification': _specController.text.trim(),
+        'college': _collegeController.text.trim(),
+        'branch': _branchController.text.trim(),
+        'year': _yearController.text.trim(),
+        'phoneNumber': _phoneController.text.trim(),
+        'showPhoneNumber': _showPhoneNumber,
+        'lastProfileUpdate': FieldValue.serverTimestamp(),
+      });
+      if (!mounted) return;
+      setState(() => _isEditing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profile updated!"), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Update failed: $e"), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _shareReferralCode() async {
+    final code = userData?['referralCode'] ?? '';
+    if (code.isEmpty) return;
+    await Share.share(
+      "Join me on SANSPHERE — the campus resource-sharing app! "
+      "Use my referral code $code when you sign up and I'll get 100 SanCoins. 🎓",
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  Widget _buildWalletCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 8),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return const Scaffold(body: Center(child: Text("Please log in.")));
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text("My Profile"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: _handleLogout)],
+      ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: _firestore.collection('users').doc(uid).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text("Profile not found."));
+          }
+
+          userData = snapshot.data!.data() as Map<String, dynamic>;
+          if (!_isEditing) _loadIntoControllers(userData!);
+
+          final canEdit = _canEditNow(userData!);
+          final myEarnings = (GlobalState.creatorEarnings[uid] ?? 0.0);
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                        child: Text(
+                          (userData!['fullName'] ?? '?').toString().isNotEmpty
+                              ? userData!['fullName'][0].toString().toUpperCase()
+                              : '?',
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(userData!['fullName'] ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text(userData!['email'] ?? '', style: const TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 1.5,
+                  children: [
+                    _buildWalletCard("Available Cash", "₹${GlobalState.currentUserWallet.toStringAsFixed(2)}", Icons.account_balance_wallet, Colors.teal),
+                    _buildWalletCard("SanCoins", "${(userData?['sanCoins'] ?? 0)}", Icons.stars_rounded, Colors.amber),
+                    _buildWalletCard("My Document Sales", "₹${myEarnings.toStringAsFixed(2)}", Icons.monetization_on, Colors.purple),
+                    _buildWalletCard("Platform Processing Pool", "₹${GlobalState.platformProcessingPool.toStringAsFixed(2)}", Icons.admin_panel_settings, Colors.blueGrey),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                ListTile(
+                  tileColor: Colors.blueAccent.withValues(alpha: 0.08),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.card_giftcard, color: Colors.blueAccent),
+                  title: const Text("Refer and Earn", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: Text("Your code: ${userData?['referralCode'] ?? '...'} • Earn 100 SanCoins per signup"),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                  onTap: _shareReferralCode,
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  tileColor: Colors.grey.withValues(alpha: 0.08),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  leading: const Icon(Icons.support_agent, color: Colors.black87),
+                  title: const Text("Contact Support", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  subtitle: const Text("Report an issue or send a suggestion"),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportScreen()));
+                  },
+                ),
+
+                const SizedBox(height: 28),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Profile Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    if (!_isEditing)
+                      TextButton.icon(
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: Text(canEdit ? "Edit" : "Locked (30-day cooldown)"),
+                        onPressed: canEdit ? () => setState(() => _isEditing = true) : null,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                _isEditing
+                    ? Column(
+                        children: [
+                          TextFormField(controller: _bioController, decoration: const InputDecoration(labelText: "Bio")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: _specController, decoration: const InputDecoration(labelText: "Specification")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: _collegeController, decoration: const InputDecoration(labelText: "College")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: _branchController, decoration: const InputDecoration(labelText: "Branch")),
+                          const SizedBox(height: 12),
+                          TextFormField(controller: _yearController, decoration: const InputDecoration(labelText: "Year")),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(labelText: "Phone Number"),
+                          ),
+                          const SizedBox(height: 4),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text("Show my phone number to people I chat with", style: TextStyle(fontSize: 13)),
+                            value: _showPhoneNumber,
+                            onChanged: (v) => setState(() => _showPhoneNumber = v),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => setState(() => _isEditing = false),
+                                  child: const Text("Cancel"),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _isSaving ? null : () => _saveProfileChanges(uid),
+                                  child: _isSaving
+                                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                      : const Text("Save"),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Bio: ${userData!['bio'] ?? ''}"),
+                          const SizedBox(height: 6),
+                          Text("Specification: ${userData!['specification'] ?? ''}"),
+                          const SizedBox(height: 6),
+                          Text("College: ${userData!['college'] ?? ''}"),
+                          const SizedBox(height: 6),
+                          Text("Branch: ${userData!['branch'] ?? ''}"),
+                          const SizedBox(height: 6),
+                          Text("Year: ${userData!['year'] ?? ''}"),
+                          const SizedBox(height: 6),
+                          Text(
+                            _showPhoneNumber && (userData!['phoneNumber'] ?? '').toString().isNotEmpty
+                                ? "Phone: ${userData!['phoneNumber']} (visible to chat contacts)"
+                                : "Phone: ${(userData!['phoneNumber'] ?? '').toString().isEmpty ? 'not set' : 'hidden from others'}",
+                            style: const TextStyle(color: Colors.grey, fontSize: 13),
+                          ),
+                        ],
+                      ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+============================================================
+FILE: lib/screens/reels_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+
+class ReelItem {
+  final String title;
+  final String type;
+  final String college;
+  final double price;
+  final String author;
+
+  ReelItem({
+    required this.title,
+    required this.type,
+    required this.college,
+    required this.price,
+    required this.author,
+  });
+}
+
+class ReelsScreen extends StatefulWidget {
+  const ReelsScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ReelsScreen> createState() => _ReelsScreenState();
+}
+
+class _ReelsScreenState extends State<ReelsScreen> {
+  final List<ReelItem> localReels = [
+    ReelItem(title: "DBMS Complete Notes", type: "Notes", college: "SITRC", price: 0.0, author: "Karan Askand"),
+    ReelItem(title: "Java OOPs Cheat Sheet", type: "Notes", college: "SITRC", price: 0.0, author: "Admin"),
+    ReelItem(title: "Compiler Design Guide", type: "PYQs", college: "SITRC", price: 0.0, author: "Rahul M."),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text("Academic Reels", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+      body: PageView.builder(
+        scrollDirection: Axis.vertical,
+        itemCount: localReels.length,
+        itemBuilder: (context, index) {
+          final item = localReels[index];
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade900),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Chip(label: Text(item.type)),
+                const SizedBox(height: 10),
+                Text(item.title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 10),
+                Text("College: ${item.college} • Creator: ${item.author}", style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 5),
+                Text("Price: ₹${item.price}", style: const TextStyle(color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+============================================================
+FILE: lib/screens/resource_detail_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import '../models/academic_resource.dart';
+import '../global_state.dart';
+
+class ResourceDetailScreen extends StatefulWidget {
+  final AcademicResource resource;
+  final GlobalState globalState;
+
+  const ResourceDetailScreen({
+    super.key,
+    required this.resource,
+    required this.globalState,
+  });
+
+  @override
+  State<ResourceDetailScreen> createState() => _ResourceDetailScreenState();
+}
+
+class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.resource.title),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.resource.title,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text('College: ${widget.resource.college}'),
+            Text('Category: ${widget.resource.type}'),
+            Text('Custom Doc ID: ${widget.resource.customDocId}'),
+            const SizedBox(height: 16),
+            Text(
+              widget.resource.price <= 0
+                  ? 'Access: Free'
+                  : 'Price: ₹${widget.resource.price.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+============================================================
+FILE: lib/screens/support_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class SupportScreen extends StatefulWidget {
+  const SupportScreen({super.key});
+
+  @override
+  State<SupportScreen> createState() => _SupportScreenState();
+}
+
+class _SupportScreenState extends State<SupportScreen> {
+  static const String _adminEmail = "karanaskand221@gmail.com";
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  String _selectedTopic = 'Account Issue';
+  bool _isSending = false;
+
+  final List<String> _topics = [
+    'Account Issue',
+    'Payment / Wallet Issue',
+    'Document Upload Problem',
+    'Report a User',
+    'Bug Report',
+    'Suggestion',
+    'Other',
+  ];
+
+  final _firestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'sansphere',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _emailController.text = user.email ?? '';
+      _nameController.text = user.displayName ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitTicket() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSending = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      await _firestore.collection('mail').add({
+        'to': [_adminEmail],
+        'message': {
+          'subject': 'SANSPHERE Support: $_selectedTopic',
+          'html': '''
+            <h3>New Support Ticket</h3>
+            <p><b>User Name:</b> ${_nameController.text.trim()}</p>
+            <p><b>User Email:</b> ${_emailController.text.trim()}</p>
+            <p><b>User UID:</b> ${user?.uid ?? 'guest'}</p>
+            <p><b>Topic:</b> $_selectedTopic</p>
+            <p><b>Description:</b></p>
+            <p>${_descriptionController.text.trim().replaceAll('\n', '<br>')}</p>
+          ''',
+        },
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ticket submitted! Our team will reach out via email."), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to submit: $e"), backgroundColor: Colors.redAccent),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text("Contact Support"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("We're here to help", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              const Text("Fill this out and our team will follow up by email.", style: TextStyle(color: Colors.grey)),
+              const SizedBox(height: 24),
+
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: "Your Name", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                validator: (v) => v == null || v.trim().isEmpty ? "Enter your name" : null,
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(labelText: "Your Email", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                validator: (v) => v == null || !v.contains('@') ? "Enter a valid email" : null,
+              ),
+              const SizedBox(height: 16),
+
+              DropdownButtonFormField<String>(
+                initialValue: _selectedTopic,
+                decoration: InputDecoration(labelText: "Issue Topic", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                items: _topics.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                onChanged: (v) => setState(() => _selectedTopic = v!),
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 5,
+                decoration: InputDecoration(labelText: "Describe the issue / suggestion", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                validator: (v) => v == null || v.trim().isEmpty ? "Please describe the issue" : null,
+              ),
+              const SizedBox(height: 28),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2563EB), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                  onPressed: _isSending ? null : _submitTicket,
+                  child: _isSending
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Submit Ticket", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+============================================================
+FILE: lib/screens/upload_resource_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import '../global_state.dart';
+import '../models/academic_resource.dart';
+
+class UploadResourceScreen extends StatefulWidget {
+  final GlobalState globalState;
+
+  const UploadResourceScreen({
+    Key? key,
+    required this.globalState,
+  }) : super(key: key);
+
+  @override
+  State<UploadResourceScreen> createState() => _UploadResourceScreenState();
+}
+
+class _UploadResourceScreenState extends State<UploadResourceScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  // Controllers
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _subjectController = TextEditingController();
+  final TextEditingController _uploaderController = TextEditingController();
+  final TextEditingController _tagsController = TextEditingController();
+
+  // Selected State Options
+  ResourceCategory _selectedCategory = ResourceCategory.lectureNotes;
+  String _selectedDepartment = 'Computer Engineering';
+  int _selectedSemester = 4;
+
+  // Selected File Mock State
+  String? _selectedFileName;
+  double? _selectedFileSizeMb;
+  bool _isUploading = false;
+
+  final List<String> _departments = [
+    'Computer Engineering',
+    'Information Technology',
+    'Mechanical Engineering',
+    'Electrical Engineering',
+    'Civil Engineering',
+  ];
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _subjectController.dispose();
+    _uploaderController.dispose();
+    _tagsController.dispose();
+    super.dispose();
+  }
+
+  void _pickFileMock() {
+    // Simulate interactive file picking
+    setState(() {
+      _selectedFileName = 'Notes_Lecture_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}.pdf';
+      _selectedFileSizeMb = 3.5;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Selected file: $_selectedFileName'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _submitForm() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_selectedFileName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a file to upload.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+    });
+
+    // Simulate network latency for file upload
+    await Future.delayed(const Duration(milliseconds: 1200));
+
+    // Parse comma-separated tags
+    final tagsList = _tagsController.text
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
+
+    // Create new Academic Resource record
+    final newResource = AcademicResource(
+      id: 'res_${DateTime.now().millisecondsSinceEpoch}',
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      subject: _subjectController.text.trim(),
+      department: _selectedDepartment,
+      semester: _selectedSemester,
+      category: _selectedCategory,
+      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileName: _selectedFileName!,
+      fileSizeMb: _selectedFileSizeMb ?? 1.0,
+      uploaderId: 'user_current',
+      uploaderName: _uploaderController.text.trim().isEmpty
+          ? 'Anonymous Student'
+          : _uploaderController.text.trim(),
+      uploadDate: DateTime.now(),
+      downloadCount: 0,
+      rating: 5.0,
+      tags: tagsList.isEmpty ? ['Academic', 'Study'] : tagsList,
+    );
+
+    widget.globalState.addResource(newResource);
+
+    if (mounted) {
+      setState(() {
+        _isUploading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resource uploaded successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Upload Resource'),
+      ),
+      body: _isUploading
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Uploading and processing document...'),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // File Selector Picker Mock Container
+                    InkWell(
+                      onTap: _pickFileMock,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _selectedFileName == null
+                                ? Colors.grey
+                                : Theme.of(context).primaryColor,
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          color: _selectedFileName == null
+                              ? Colors.grey[50]
+                              : Theme.of(context).primaryColor.withOpacity(0.05),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              _selectedFileName == null
+                                  ? Icons.cloud_upload_outlined
+                                  : Icons.check_circle_outline,
+                              size: 48,
+                              color: _selectedFileName == null
+                                  ? Colors.grey[600]
+                                  : Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _selectedFileName == null
+                                  ? 'Tap to select PDF or document file'
+                                  : 'Selected: $_selectedFileName',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _selectedFileName == null
+                                    ? Colors.black87
+                                    : Theme.of(context).primaryColor,
+                              ),
+                            ),
+                            if (_selectedFileSizeMb != null)
+                              Text(
+                                '${_selectedFileSizeMb} MB',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Resource Title
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Resource Title *',
+                        border: OutlineInputBorder(),
+                        hintText: 'e.g., Unit 1 & 2 Complete Lecture Notes',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter a title';
+                        }
+                        if (value.trim().length < 5) {
+                          return 'Title must be at least 5 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Subject & Category Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _subjectController,
+                            decoration: const InputDecoration(
+                              labelText: 'Subject *',
+                              border: OutlineInputBorder(),
+                              hintText: 'e.g., DBMS',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Enter subject';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<ResourceCategory>(
+                            value: _selectedCategory,
+                            decoration: const InputDecoration(
+                              labelText: 'Category',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: ResourceCategory.values.map((cat) {
+                              return DropdownMenuItem(
+                                value: cat,
+                                child: Text(cat.name),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedCategory = val);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Department & Semester Row
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedDepartment,
+                            decoration: const InputDecoration(
+                              labelText: 'Department',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: _departments.map((dept) {
+                              return DropdownMenuItem(
+                                value: dept,
+                                child: Text(
+                                  dept,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedDepartment = val);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 1,
+                          child: DropdownButtonFormField<int>(
+                            value: _selectedSemester,
+                            decoration: const InputDecoration(
+                              labelText: 'Semester',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: List.generate(8, (i) => i + 1).map((sem) {
+                              return DropdownMenuItem(
+                                value: sem,
+                                child: Text('Sem $sem'),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedSemester = val);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Description
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Description *',
+                        border: OutlineInputBorder(),
+                        hintText: 'Provide a summary of what this document contains...',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().length < 10) {
+                          return 'Description must be at least 10 characters';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Uploader Name
+                    TextFormField(
+                      controller: _uploaderController,
+                      decoration: const InputDecoration(
+                        labelText: 'Your Name (Uploader)',
+                        border: OutlineInputBorder(),
+                        hintText: 'e.g., Alex Johnson',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Tags
+                    TextFormField(
+                      controller: _tagsController,
+                      decoration: const InputDecoration(
+                        labelText: 'Tags (comma separated)',
+                        border: OutlineInputBorder(),
+                        hintText: 'e.g., Exam, Solved, Unit1, Trees',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _submitForm,
+                        child: const Text(
+                          'Upload Resource',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
+================ FIREBASE CONFIG/RULES ================
+
+============================================================
+FILE: firebase.json
+============================================================
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": [
+    {
+      "database": "(default)",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    },
+    {
+      "database": "sanvault",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ]
+}
+
+============================================================
+FILE: firestore.rules
+============================================================
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Chat rooms
+    match /chats/{chatId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid in resource.data.participants;
+
+      allow create: if request.auth != null;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+
+============================================================
+FILE: firestore.indexes.json
+============================================================
+{
+  "indexes": [
+    {
+      "collectionGroup": "chats",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "participants",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "lastMessageAt",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
+
+============================================================
+FILE: storage.rules
+============================================================
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+============================================================
+FILE: .firebaserc
+============================================================
+
+{
+
+  "projects": {
+
+    "default": "gen-lang-client-0227443307"
+
+  }
+
+}
+
+
+================ ANDROID IMPORTANT FILES ================
+
+============================================================
+FILE: android/app/build.gradle.kts
+============================================================
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+    // ADD THIS LINE BELOW:
+    id("com.google.gms.google-services")
+}
+============================================================
+FILE: android/build.gradle.kts
+============================================================
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+val newBuildDir: Directory =
+    rootProject.layout.buildDirectory
+        .dir("../../build")
+        .get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+
+subprojects {
+    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.value(newSubprojectBuildDir)
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.layout.buildDirectory)
+}
+
+============================================================
+FILE: android/settings.gradle.kts
+============================================================
+pluginManagement {
+    val flutterSdkPath =
+        run {
+            val properties = java.util.Properties()
+            file("local.properties").inputStream().use { properties.load(it) }
+            val flutterSdkPath = properties.getProperty("flutter.sdk")
+            require(flutterSdkPath != null) { "flutter.sdk not set in local.properties" }
+            flutterSdkPath
+        }
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id("dev.flutter.flutter-plugin-loader") version "1.0.0"
+    id("com.android.application") version "9.0.1" apply false
+    id("org.jetbrains.kotlin.android") version "2.3.20" apply false
+}
+
+include(":app")
+
+============================================================
+FILE: android/gradle.properties
+============================================================
+org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=4G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
+android.useAndroidX=true
+# This newDsl flag was added by the Flutter template
+android.newDsl=false
+# This builtInKotlin flag was added by the Flutter template
+android.builtInKotlin=false
+
+================ IOS IMPORTANT FILES ================
+
+============================================================
+FILE: ios/Runner/Info.plist
+============================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<true/>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<key>CFBundleDisplayName</key>
+		<string>Sansphere Android</string>
+		<key>CFBundleExecutable</key>
+		<string>$(EXECUTABLE_NAME)</string>
+		<key>CFBundleIdentifier</key>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleName</key>
+		<string>sansphere_android</string>
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+		<key>CFBundleShortVersionString</key>
+		<string>$(FLUTTER_BUILD_NAME)</string>
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		<key>CFBundleVersion</key>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<key>LSRequiresIPhoneOS</key>
+		<true/>
+		<key>UIApplicationSceneManifest</key>
+		<dict>
+			<key>UIApplicationSupportsMultipleScenes</key>
+			<false/>
+			<key>UISceneConfigurations</key>
+			<dict>
+				<key>UIWindowSceneSessionRoleApplication</key>
+				<array>
+					<dict>
+						<key>UISceneClassName</key>
+						<string>UIWindowScene</string>
+						<key>UISceneConfigurationName</key>
+						<string>flutter</string>
+						<key>UISceneDelegateClassName</key>
+						<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+						<key>UISceneStoryboardFile</key>
+						<string>Main</string>
+					</dict>
+				</array>
+			</dict>
+		</dict>
+		<key>UIApplicationSupportsIndirectInputEvents</key>
+		<true/>
+		<key>UILaunchStoryboardName</key>
+		<string>LaunchScreen</string>
+		<key>UIMainStoryboardFile</key>
+		<string>Main</string>
+		<key>UISupportedInterfaceOrientations</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationPortraitUpsideDown</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UIStatusBarHidden</key>
+		<false/>
+	</dict>
+</plist>

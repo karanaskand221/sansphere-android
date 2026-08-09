@@ -1,31 +1,31 @@
 {
-  "firestore": {
-    "database": "(default)",
-    "location": "nam5",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   },
+  "firestore": [
+    {
+      "database": "(default)",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    },
+    {
+      "database": "sanvault",
+      "rules": "firestore.rules",
+      "indexes": "firestore.indexes.json"
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
-  },
-  "emulators": {
-    "auth": {
-      "port": 9099
-    },
-    "firestore": {
-      "port": 8080
-    },
-    "storage": {
-      "port": 9199
-    },
-    "ui": {
-      "enabled": true
-    },
-    "singleProjectMode": true
-  },
-  "auth": {
-    "providers": {
-      "emailPassword": true
-    }
   }
 }

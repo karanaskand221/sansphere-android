@@ -1,405 +1,384 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../global_state.dart';
+import '../models/academic_resource.dart';
+import 'resource_detail_screen.dart';
 import 'upload_resource_screen.dart';
-import 'file_preview_screen.dart';
 
-// Clear Blueprint Model for incoming cloud database items
-class ResourceModel {
-  final String id;
-  final String title;
-  final String type;
-  final String college;
-  final double price;
-  final String authorName;
-  final String authorUid;
-  final String fileUrl;
+class MarketplaceFeedScreen extends StatefulWidget {
+  final GlobalState globalState;
 
-  ResourceModel({
-    required this.id,
-    required this.title,
-    required this.type,
-    required this.college,
-    required this.price,
-    required this.authorName,
-    required this.authorUid,
-    required this.fileUrl,
-  });
-
-  factory ResourceModel.fromFirestore(QueryDocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return ResourceModel(
-      id: doc.id,
-      title: data['title'] ?? 'Untitled Resource',
-      type: data['type'] ?? 'Notes',
-      college: data['college'] ?? 'SITRC',
-      price: (data['price'] as num?)?.toDouble() ?? 0.0,
-      authorName: data['authorName'] ?? 'Anonymous Student',
-      authorUid: data['authorUid'] ?? '',
-      fileUrl: data['fileUrl'] ?? '',
-    );
-  }
-}
-
-// Global Wallet Track Balance fallback constant for UI display consistency
-double globalUserWalletBalance = 500.0;
-
-class MarketplaceFeed extends StatefulWidget {
-  const MarketplaceFeed({super.key});
+  const MarketplaceFeedScreen({Key? key, required this.globalState})
+    : super(key: key);
 
   @override
-  State<MarketplaceFeed> createState() => _MarketplaceFeedState();
+  State<MarketplaceFeedScreen> createState() => _MarketplaceFeedScreenState();
 }
 
-class _MarketplaceFeedState extends State<MarketplaceFeed> {
-  String _selectedCollegeFilter = 'All';
-  String _selectedTypeFilter = 'All';
-  
-  // Tracks unique document IDs unlocked by the current user
-  final Set<String> _unlockedResourceIds = {};
+class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
+  final TextEditingController _searchController = TextEditingController();
 
-  // Custom alert interceptor preventing crashes when guest accounts trigger purchases
-  void _showGuestRestrictionModal(String actionContext) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.lock_outline_rounded, color: Colors.orangeAccent),
-            SizedBox(width: 8),
-            Text("Authentication Needed")
-          ],
-        ),
-        content: Text("You are browsing Sansphere in Guest Mode.\n\nTo $actionContext and access premium academic assets, please complete full registration via the Profile tab."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Got it", style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _searchController.text = widget.globalState.searchQuery;
   }
 
-  void _executePurchase(ResourceModel item) {
-    // Gracefully interrupt transaction mechanics if the user context is missing
-    if (FirebaseAuth.instance.currentUser == null) {
-      _showGuestRestrictionModal("unlock documents");
-      return;
-    }
-
-    if (globalUserWalletBalance < item.price) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Row(
-            children: [Icon(Icons.warning_amber_rounded, color: Colors.redAccent), SizedBox(width: 8), Text("Insufficient Funds")],
-          ),
-          content: Text("Your wallet balance (₹${globalUserWalletBalance.toStringAsFixed(2)}) is lower than the asset cost (₹${item.price.toStringAsFixed(2)}).\n\nPlease top up tokens to clear this transaction loop."),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Dismiss")),
-          ],
-        ),
-      );
-      return;
-    }
-
-    // Process local atomic split configurations
-    setState(() {
-      globalUserWalletBalance -= item.price;
-      _unlockedResourceIds.add(item.id);
-    });
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [Icon(Icons.check_circle_rounded, color: Colors.green, size: 26), SizedBox(width: 8), Text("Purchase Cleared!")],
-        ),
-        content: Text("You have unlocked full secure access to:\n\"${item.title}\"\n\n"
-            "• Debited Amount: ₹${item.price.toStringAsFixed(2)}\n"
-            "• Creator Split (65%): ₹${(item.price * 0.65).toStringAsFixed(2)}\n"
-            "• Infrastructure Fee (35%): ₹${(item.price * 0.35).toStringAsFixed(2)}\n\n"
-            "New Wallet Allocation: ₹${globalUserWalletBalance.toStringAsFixed(2)}"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FilePreviewScreen(
-                    documentTitle: item.title,
-                    documentCampus: item.college,
-                  ),
-                ),
-              );
-            },
-            child: const Text("Open Document View", style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isGuest = FirebaseAuth.instance.currentUser == null;
-    final String currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    return ListenableBuilder(
+      listenable: widget.globalState,
+      builder: (context, _) {
+        final resources = widget.globalState.filteredResources;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Modern soft backdrop accent
-      appBar: AppBar(
-        title: const Text("The Academic Vault", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blueAccent.withOpacity(0.15)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Academic Resource Hub'),
+            elevation: 2,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Reset Filters',
+                onPressed: () {
+                  _searchController.clear();
+                  widget.globalState.resetFilters();
+                },
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Search & Filter Header Section
+              Container(
+                padding: const EdgeInsets.all(12.0),
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
+                child: Column(
                   children: [
-                    const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Colors.blueAccent),
-                    const SizedBox(width: 6),
-                    Text(
-                      isGuest ? "₹0.00" : "₹${globalUserWalletBalance.toStringAsFixed(2)}",
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent, fontSize: 14),
+                    // Search Bar
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search notes, subjects, tags...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  widget.globalState.setSearchQuery('');
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onChanged: (val) {
+                        widget.globalState.setSearchQuery(val);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Category Chips Filter
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          FilterChip(
+                            label: const Text('All Categories'),
+                            selected:
+                                widget.globalState.selectedCategory == null,
+                            onSelected: (_) {
+                              widget.globalState.setCategoryFilter(null);
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ...ResourceCategory.values.map((cat) {
+                            final isSelected =
+                                widget.globalState.selectedCategory == cat;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: FilterChip(
+                                label: Text(_formatCategoryName(cat)),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  widget.globalState.setCategoryFilter(
+                                    selected ? cat : null,
+                                  );
+                                },
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          )
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.blueAccent,
-        elevation: 4,
-        icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
-        label: const Text("Publish Material", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        onPressed: () {
-          if (isGuest) {
-            _showGuestRestrictionModal("upload source materials");
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const UploadResourceScreen()),
-            );
-          }
-        },
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          // Filter Row 1: Campuses
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Row(
-              children: ['All', 'SITRC', 'SIEM', 'SIPS', 'SU'].map((college) {
-                final isSelected = _selectedCollegeFilter == college;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(college),
-                    selected: isSelected,
-                    selectedColor: Colors.blueAccent,
-                    labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-                    backgroundColor: Colors.white,
-                    side: BorderSide(color: isSelected ? Colors.blueAccent : Colors.grey.withOpacity(0.2)),
-                    onSelected: (val) => setState(() => _selectedCollegeFilter = college),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          // Filter Row 2: Category Types
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-            child: Row(
-              children: ['All', 'Notes', 'PYQ', 'Question Bank'].map((type) {
-                final isSelected = _selectedTypeFilter == type;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(type),
-                    selected: isSelected,
-                    selectedColor: Colors.orangeAccent[700],
-                    labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-                    backgroundColor: Colors.white,
-                    side: BorderSide(color: isSelected ? Colors.orangeAccent[700]! : Colors.grey.withOpacity(0.2)),
-                    onSelected: (val) => setState(() => _selectedTypeFilter = type),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xEFEFEFEF)),
-          
-          // Live Global Firebase Sync Pipeline Grid Framework Engine
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('resources').orderBy('createdAt', descending: true).snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Center(child: Text("Error fetching streaming parameters infrastructure."));
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator.adaptive());
-                }
 
-                // Map incoming documents to native resource blueprint arrays
-                final allDocs = snapshot.data?.docs ?? [];
-                final List<ResourceModel> resources = allDocs.map((doc) => ResourceModel.fromFirestore(doc)).toList();
-
-                // Apply combined active matrix filtering vectors locally
-                final filteredList = resources.where((item) {
-                  final matchCollege = _selectedCollegeFilter == 'All' || item.college == _selectedCollegeFilter;
-                  final matchType = _selectedTypeFilter == 'All' || item.type == _selectedTypeFilter;
-                  return matchCollege && matchType;
-                }).toList();
-
-                if (filteredList.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.folder_open_outlined, size: 54, color: Colors.grey.withOpacity(0.6)),
-                        const SizedBox(height: 12),
-                        const Text(
-                          "No assets found in this partition stack.", 
-                          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500, fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 86),
-                  itemCount: filteredList.length,
-                  itemBuilder: (context, index) {
-                    final item = filteredList[index];
-                    // Check ownership rules based on UID strings or purchase vectors safely
-                    final bool isOwned = !isGuest && (item.authorUid == currentUid || _unlockedResourceIds.contains(item.id));
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black87.withOpacity(0.02),
-                            blurRadius: 12,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
+              // Results Counter
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Found ${resources.length} resource(s)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(18.0),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main Resource List
+              Expanded(
+                child: resources.isEmpty
+                    ? Center(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blueAccent.withOpacity(0.08),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    "${item.college} • ${item.type.toUpperCase()}",
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueAccent, letterSpacing: 0.5),
-                                  ),
-                                ),
-                                Text(
-                                  isOwned ? "Owned" : "By: ${item.authorName}",
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.folder_off_outlined,
+                              size: 64,
+                              color: Colors.grey,
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              item.title,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87, height: 1.3),
+                            const Text(
+                              'No matching resources found.',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("ACCESS VALUE", style: TextStyle(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      "₹${item.price.toStringAsFixed(2)}",
-                                      style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Colors.black87),
-                                    ),
-                                  ],
-                                ),
-                                ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isOwned ? Colors.green[600] : Colors.blueAccent,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  ),
-                                  icon: Icon(isOwned ? Icons.menu_book_rounded : Icons.shopping_bag_rounded, size: 18),
-                                  label: Text(
-                                    isOwned ? "View Vault File" : "Unlock Access",
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                  onPressed: () {
-                                    if (isOwned) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => FilePreviewScreen(
-                                            documentTitle: item.title,
-                                            documentCampus: item.college,
-                                          ),
-                                        ),
-                                      );
-                                    } else {
-                                      _executePurchase(item);
-                                    }
-                                  },
-                                ),
-                              ],
+                            TextButton(
+                              onPressed: () {
+                                _searchController.clear();
+                                widget.globalState.resetFilters();
+                              },
+                              child: const Text('Clear Filters'),
                             ),
                           ],
                         ),
+                      )
+                    : ListView.builder(
+                        itemCount: resources.length,
+                        padding: const EdgeInsets.all(12),
+                        itemBuilder: (context, index) {
+                          final resource = resources[index];
+                          return ResourceCard(
+                            resource: resource,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ResourceDetailScreen(
+                                    resource: resource,
+                                    globalState: widget.globalState,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+              ),
+            ],
           ),
-        ],
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      UploadResourceScreen(globalState: widget.globalState),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Upload Resource'),
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatCategoryName(ResourceCategory cat) {
+    switch (cat) {
+      case ResourceCategory.questionBank:
+        return 'Question Bank';
+      case ResourceCategory.pyq:
+        return 'PYQ';
+      case ResourceCategory.lectureNotes:
+        return 'Lecture Notes';
+      case ResourceCategory.textbook:
+        return 'Textbook';
+      case ResourceCategory.questionPaper:
+        return 'Question Paper';
+      case ResourceCategory.testPaper:
+        return 'Test Paper';
+      case ResourceCategory.labManual:
+        return 'Lab Manual';
+      case ResourceCategory.assignment:
+        return 'Assignment';
+      case ResourceCategory.other:
+        return 'Other';
+    }
+  }
+}
+
+/// Card component to display individual academic resources
+class ResourceCard extends StatelessWidget {
+  final AcademicResource resource;
+  final VoidCallback onTap;
+
+  const ResourceCard({Key? key, required this.resource, required this.onTap})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getCategoryIcon(resource.category),
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          resource.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${resource.subject} • Sem ${resource.semester}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                resource.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey[800], fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 16, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${resource.rating}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.download, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${resource.downloadCount}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    '${resource.fileSizeMb} MB',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  IconData _getCategoryIcon(ResourceCategory cat) {
+    switch (cat) {
+      case ResourceCategory.questionBank:
+        return Icons.quiz;
+      case ResourceCategory.pyq:
+        return Icons.description;
+      case ResourceCategory.lectureNotes:
+        return Icons.menu_book;
+      case ResourceCategory.textbook:
+        return Icons.book;
+      case ResourceCategory.questionPaper:
+        return Icons.quiz;
+      case ResourceCategory.testPaper:
+        return Icons.assignment;
+      case ResourceCategory.labManual:
+        return Icons.science;
+      case ResourceCategory.assignment:
+        return Icons.assignment;
+      case ResourceCategory.other:
+        return Icons.insert_drive_file;
+    }
   }
 }
