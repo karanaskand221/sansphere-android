@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sansphere_android/models/academic_resource.dart';
+import 'package:sansphere/models/academic_resource.dart';
 
 void main() {
   group('AcademicResource', () {
