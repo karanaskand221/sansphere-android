@@ -42,9 +42,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
 
   int get _price {
     final price = widget.resource.price;
-
-    if (!price.isFinite) return -1;
-
+    if (!price.isFinite || price <= 0) return 0;
     return price.round();
   }
 
@@ -90,45 +88,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     }
 
     if (_processingPurchase) return;
-
-    if (_price == 0) {
-      setState(() {
-        _processingPurchase = true;
-      });
-
-      try {
-        final result =
-            await _sanCoinService.purchaseResource(_resourceId);
-
-        final success = result['success'] == true;
-
-        if (!success) {
-          throw Exception('Free resource could not be unlocked.');
-        }
-
-        if (!mounted) return;
-
-        setState(() {
-          _purchased = true;
-        });
-
-        _showSuccess('Free resource unlocked!');
-      } catch (e) {
-        debugPrint('Free resource unlock failed: $e');
-
-        if (!mounted) return;
-
-        _showError(_friendlyPurchaseError(e));
-      } finally {
-        if (mounted) {
-          setState(() {
-            _processingPurchase = false;
-          });
-        }
-      }
-
-      return;
-    }
 
     final confirmed = await _showPurchaseConfirmation();
 

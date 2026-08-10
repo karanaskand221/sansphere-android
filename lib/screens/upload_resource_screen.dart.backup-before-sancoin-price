@@ -24,7 +24,6 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
   final _descriptionController = TextEditingController();
   final _subjectController = TextEditingController();
   final _uploaderController = TextEditingController();
-  final _priceController = TextEditingController(text: '0');
   final _tagsController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -79,7 +78,6 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
     _descriptionController.dispose();
     _subjectController.dispose();
     _uploaderController.dispose();
-    _priceController.dispose();
     _tagsController.dispose();
     super.dispose();
   }
@@ -300,15 +298,6 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
           .where((tag) => tag.isNotEmpty)
           .toList();
 
-      final priceText = _priceController.text.trim();
-      final price = int.tryParse(priceText);
-
-      if (price == null || price < 0) {
-        throw const FormatException(
-          'Price must be a valid whole number of SanCoins.',
-        );
-      }
-
       final now = FieldValue.serverTimestamp();
 
       final resourceData = <String, dynamic>{
@@ -321,7 +310,7 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         'type': _categoryDisplayName(_selectedCategory),
         'category': _selectedCategory.name,
         'semester': _selectedSemester,
-        'price': price,
+        'price': 0.0,
 
         'fileUrl': downloadUrl,
         'fileName': file.name,
@@ -653,31 +642,6 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                 ),
 
                 const SizedBox(height: 16),
-
-                TextFormField(
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(
-                    labelText: 'Price in SanCoins',
-                    hintText: 'Enter price, e.g. 100',
-                    prefixIcon: const Icon(Icons.monetization_on),
-                    suffixText: 'SanCoins',
-                    border: const OutlineInputBorder(),
-                    helperText: '0 = Free • 1–100 = Paid resource',
-                  ),
-                  validator: (value) {
-                    final text = value?.trim() ?? '';
-                    final price = int.tryParse(text);
-
-                    if (price == null || price < 0) {
-                      return 'Enter a valid whole-number price.';
-                    }
-
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
 
                 TextFormField(
                   controller: _tagsController,

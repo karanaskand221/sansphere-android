@@ -124,29 +124,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (e.code == 'weak-password') {
       errorMessage = 'The password provided is too weak.';
     } else if (e.code == 'email-already-in-use') {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'This email is already registered. Please sign in instead.',
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
-          action: SnackBarAction(
-            label: 'SIGN IN',
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ),
-      );
-
-      return;
+      errorMessage =
+          'An account already exists for this email address.';
     } else if (e.code == 'invalid-email') {
       errorMessage = 'Please enter a valid email address.';
     }

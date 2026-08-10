@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class SanCoinsWalletService {
   SanCoinsWalletService._();
@@ -7,7 +8,12 @@ class SanCoinsWalletService {
   static final SanCoinsWalletService instance =
       SanCoinsWalletService._();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'sansphere',
+  );
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   Stream<Map<String, dynamic>?> walletStream() {
@@ -40,20 +46,12 @@ class SanCoinsWalletService {
   Future<int> getSanCoins() async {
     final wallet = await getWallet();
 
-    if (wallet == null) {
-      return 0;
-    }
-
-    return (wallet['sanCoins'] as num?)?.toInt() ?? 0;
+    return (wallet?['sanCoins'] as num?)?.toInt() ?? 0;
   }
 
   Future<int> getEarnedCoins() async {
     final wallet = await getWallet();
 
-    if (wallet == null) {
-      return 0;
-    }
-
-    return (wallet['earnedCoins'] as num?)?.toInt() ?? 0;
+    return (wallet?['earnedCoins'] as num?)?.toInt() ?? 0;
   }
 }

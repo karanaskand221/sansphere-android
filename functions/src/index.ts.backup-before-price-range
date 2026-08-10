@@ -17,7 +17,7 @@ const REFERRER_BONUS = 200;
 const AD_REWARD = 10;
 
 const MIN_PRICE = 0;
-const MAX_PRICE = 100;
+const MAX_PRICE = 49;
 
 function requireAuth(request: CallableRequest): string {
   const uid = request.auth?.uid;

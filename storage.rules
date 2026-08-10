@@ -1,24 +1,39 @@
 rules_version = '2';
 
 service firebase.storage {
+
   match /b/{bucket}/o {
 
+    /*
+     * Academic Vault
+     *
+     * IMPORTANT:
+     * Reads are disabled here.
+     *
+     * Downloads must go through the Cloud Function
+     * getPurchasedFileUrl(), which checks ownership
+     * and returns a short-lived signed URL.
+     */
     match /academic_vault/{userId}/{resourceId}/{fileName} {
 
-      // Any signed-in user can download/view academic resources.
-      allow read: if request.auth != null;
+      allow read: if false;
 
-      // Only the owner can upload/update their own resource.
-      allow create, update: if request.auth != null
+      allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.size <= 25 * 1024 * 1024;
 
-      // Only the owner can delete their own resource.
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size <= 25 * 1024 * 1024;
+
       allow delete: if request.auth != null
         && request.auth.uid == userId;
     }
 
-    // Everything else remains blocked.
+
+    /*
+     * Everything else remains blocked.
+     */
     match /{allPaths=**} {
       allow read, write: if false;
     }
