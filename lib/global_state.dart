@@ -36,13 +36,22 @@ class GlobalState extends ChangeNotifier {
   String _academicSearchQuery = '';
 
   ResourceCategory? _academicSelectedCategory;
+  String? _academicCustomCategory;
   String? _academicSelectedDepartment;
+  int? _academicSelectedSemester;
+  String _academicSelectedPrice = 'all';
 
   String get searchQuery => _academicSearchQuery;
 
   ResourceCategory? get selectedCategory => _academicSelectedCategory;
 
+  String? get customCategory => _academicCustomCategory;
+
   String? get selectedDepartment => _academicSelectedDepartment;
+
+  int? get selectedSemester => _academicSelectedSemester;
+
+  String get selectedPrice => _academicSelectedPrice;
 
   List<AcademicResource> get filteredResources {
     final query = _academicSearchQuery.trim().toLowerCase();
@@ -66,7 +75,22 @@ class GlobalState extends ChangeNotifier {
           resource.department.trim().toLowerCase() ==
               selectedDepartment.trim().toLowerCase();
 
-      return matchesSearch && matchesCategory && matchesDepartment;
+      final selectedSemester = _academicSelectedSemester;
+      final matchesSemester =
+          selectedSemester == null ||
+          resource.semester == selectedSemester;
+
+      final matchesPrice = switch (_academicSelectedPrice) {
+        'free' => resource.price <= 0,
+        'paid' => resource.price > 0,
+        _ => true,
+      };
+
+      return matchesSearch &&
+          matchesCategory &&
+          matchesDepartment &&
+          matchesSemester &&
+          matchesPrice;
     }).toList();
   }
 
@@ -77,7 +101,40 @@ class GlobalState extends ChangeNotifier {
 
   void setCategoryFilter(ResourceCategory? value) {
     _academicSelectedCategory = value;
+    _academicCustomCategory = null;
     notifyListeners();
+  }
+
+  void setCustomCategoryFilter(String? value) {
+    final cleaned = value?.trim();
+
+    _academicCustomCategory =
+        cleaned == null || cleaned.isEmpty ? null : cleaned;
+
+    _academicSelectedCategory = null;
+    notifyListeners();
+  }
+
+  void resetCategoryFilter() {
+    if (_academicSelectedCategory == null &&
+        _academicCustomCategory == null) {
+      return;
+    }
+
+    _academicSelectedCategory = null;
+    _academicCustomCategory = null;
+    notifyListeners();
+  }
+
+  bool _matchesCustomCategory(
+    AcademicResource resource,
+    String value,
+  ) {
+    final query = value.trim().toLowerCase();
+
+    return resource.type.trim().toLowerCase() == query ||
+        resource.category.displayName.trim().toLowerCase() == query ||
+        resource.category.name.trim().toLowerCase() == query;
   }
 
   void setDepartmentFilter(String? value) {
@@ -96,10 +153,45 @@ class GlobalState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setSemesterFilter(int? value) {
+    _academicSelectedSemester = value;
+    notifyListeners();
+  }
+
+  void resetSemesterFilter() {
+    if (_academicSelectedSemester == null) return;
+
+    _academicSelectedSemester = null;
+    notifyListeners();
+  }
+
+  void setPriceFilter(String value) {
+    final normalized = value.trim().toLowerCase();
+
+    if (normalized != 'all' &&
+        normalized != 'free' &&
+        normalized != 'paid') {
+      return;
+    }
+
+    _academicSelectedPrice = normalized;
+    notifyListeners();
+  }
+
+  void resetPriceFilter() {
+    if (_academicSelectedPrice == 'all') return;
+
+    _academicSelectedPrice = 'all';
+    notifyListeners();
+  }
+
   void resetFilters() {
     _academicSearchQuery = '';
     _academicSelectedCategory = null;
+    _academicCustomCategory = null;
     _academicSelectedDepartment = null;
+    _academicSelectedSemester = null;
+    _academicSelectedPrice = 'all';
     notifyListeners();
   }
 }
