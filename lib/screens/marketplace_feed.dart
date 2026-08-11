@@ -190,7 +190,8 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                   cursorColor: _cyan,
                   onChanged: widget.globalState.setSearchQuery,
                   decoration: InputDecoration(
-                    hintText: 'Search notes, PYQs, subjects, tags...',
+                    hintText:
+                        'Search resources, subjects, departments, tags...',
                     hintStyle: const TextStyle(
                       color: Colors.white38,
                       fontSize: 13,

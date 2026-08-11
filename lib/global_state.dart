@@ -53,17 +53,93 @@ class GlobalState extends ChangeNotifier {
 
   String get selectedPrice => _academicSelectedPrice;
 
-  List<AcademicResource> get filteredResources {
-    final query = _academicSearchQuery.trim().toLowerCase();
+  // ==========================================================
+  // Improved marketplace search
+  // ==========================================================
 
+  String _normalizeSearchText(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\\s+'), ' ');
+  }
+
+  List<String> _searchTokens(String value) {
+    final normalized = _normalizeSearchText(value);
+
+    if (normalized.isEmpty) {
+      return const <String>[];
+    }
+
+    return normalized.split(' ').where((token) => token.length >= 1).toList();
+  }
+
+  String _resourceSearchText(AcademicResource resource) {
+    final categoryName = resource.category.displayName;
+    final categoryEnumName = resource.category.name;
+
+    return _normalizeSearchText(
+      [
+        resource.title,
+        resource.subject,
+        resource.description,
+        resource.uploaderName,
+        resource.authorName,
+        resource.tags.join(' '),
+        resource.department,
+        resource.college,
+        resource.type,
+        categoryName,
+        categoryEnumName,
+        resource.fileName,
+        resource.customDocId,
+        'semester ${resource.semester}',
+        resource.semester.toString(),
+      ].join(' '),
+    );
+  }
+
+  bool _matchesSearch(AcademicResource resource) {
+    final query = _normalizeSearchText(_academicSearchQuery);
+
+    if (query.isEmpty) {
+      return true;
+    }
+
+    final tokens = _searchTokens(query);
+
+    if (tokens.isEmpty) {
+      return true;
+    }
+
+    final searchableText = _resourceSearchText(resource);
+
+    // Exact normalized phrase match gets priority.
+    if (searchableText.contains(query)) {
+      return true;
+    }
+
+    // Multi-word searches are treated as AND searches.
+    //
+    // Example:
+    // "data science notes"
+    //
+    // A resource can match "data" in its title, "science" in
+    // its subject and "notes" in its description/tags.
+    //
+    // This is intentionally more useful than requiring the whole
+    // phrase to exist in one field.
+    return tokens.every(
+      (token) =>
+          searchableText.contains(token) ||
+          searchableText.split(' ').any((word) => word.startsWith(token)),
+    );
+  }
+
+  List<AcademicResource> get filteredResources {
     return _resources.where((resource) {
-      final matchesSearch =
-          query.isEmpty ||
-          resource.title.toLowerCase().contains(query) ||
-          resource.subject.toLowerCase().contains(query) ||
-          resource.description.toLowerCase().contains(query) ||
-          resource.uploaderName.toLowerCase().contains(query) ||
-          resource.tags.any((tag) => tag.toLowerCase().contains(query));
+      final matchesSearch = _matchesSearch(resource);
 
       final matchesCategory =
           _academicSelectedCategory == null ||
