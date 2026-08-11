@@ -21,10 +21,7 @@ class _AcademicCategory {
   final String name;
   final IconData icon;
 
-  const _AcademicCategory({
-    required this.name,
-    required this.icon,
-  });
+  const _AcademicCategory({required this.name, required this.icon});
 }
 
 class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
@@ -266,22 +263,10 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
 
   Widget _buildAcademicCategories(List<AcademicResource> resources) {
     const categories = <_AcademicCategory>[
-      _AcademicCategory(
-        name: 'Computer Science',
-        icon: Icons.computer_rounded,
-      ),
-      _AcademicCategory(
-        name: 'Electronics',
-        icon: Icons.bolt_rounded,
-      ),
-      _AcademicCategory(
-        name: 'Civil',
-        icon: Icons.architecture_rounded,
-      ),
-      _AcademicCategory(
-        name: 'Chemical',
-        icon: Icons.science_rounded,
-      ),
+      _AcademicCategory(name: 'Computer Science', icon: Icons.computer_rounded),
+      _AcademicCategory(name: 'Electronics', icon: Icons.bolt_rounded),
+      _AcademicCategory(name: 'Civil', icon: Icons.architecture_rounded),
+      _AcademicCategory(name: 'Chemical', icon: Icons.science_rounded),
     ];
 
     final selected = widget.globalState.selectedDepartment;
@@ -321,10 +306,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
             const SizedBox(height: 4),
             const Text(
               'Explore resources by your engineering stream',
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: Colors.white38, fontSize: 11),
             ),
             const SizedBox(height: 14),
             GridView.builder(
@@ -343,8 +325,8 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                 return _buildAcademicCategoryCard(
                   name: category.name,
                   icon: category.icon,
-                  selected: selected?.toLowerCase() ==
-                      category.name.toLowerCase(),
+                  selected:
+                      selected?.toLowerCase() == category.name.toLowerCase(),
                   resourceCount: resources
                       .where(
                         (resource) =>
@@ -437,11 +419,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                                 color: accent.withOpacity(.22),
                               ),
                             ),
-                            child: Icon(
-                              icon,
-                              color: accent,
-                              size: 20,
-                            ),
+                            child: Icon(icon, color: accent, size: 20),
                           ),
                           const Spacer(),
                           if (selected)
@@ -514,10 +492,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 15,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
                 color: isCustom
                     ? _purple.withOpacity(.10)
@@ -544,14 +519,10 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                     decoration: BoxDecoration(
                       color: _purple.withOpacity(.09),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: _purple.withOpacity(.25),
-                      ),
+                      border: Border.all(color: _purple.withOpacity(.25)),
                     ),
                     child: Icon(
-                      isCustom
-                          ? Icons.check_rounded
-                          : Icons.add_rounded,
+                      isCustom ? Icons.check_rounded : Icons.add_rounded,
                       color: _purple,
                       size: 24,
                     ),
@@ -600,13 +571,9 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
 
   Future<void> _showCustomCategoryDialog() async {
     final controller = TextEditingController(
-      text: widget.globalState.selectedDepartment != null &&
-              ![
-                'Computer Science',
-                'Electronics',
-                'Civil',
-                'Chemical',
-              ].any(
+      text:
+          widget.globalState.selectedDepartment != null &&
+              !['Computer Science', 'Electronics', 'Civil', 'Chemical'].any(
                 (item) =>
                     item.toLowerCase() ==
                     widget.globalState.selectedDepartment!.toLowerCase(),
@@ -622,9 +589,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
           backgroundColor: const Color(0xFF0D1422),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: _purple.withOpacity(.28),
-            ),
+            side: BorderSide(color: _purple.withOpacity(.28)),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
@@ -662,20 +627,14 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'Type any academic stream or subject area.',
-                  style: TextStyle(
-                    color: Color(0x73FFFFFF),
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: Color(0x73FFFFFF), fontSize: 11),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: controller,
                   autofocus: true,
                   maxLength: 40,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                   cursorColor: _purple,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
@@ -709,9 +668,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(
-                        color: _purple.withOpacity(.55),
-                      ),
+                      borderSide: BorderSide(color: _purple.withOpacity(.55)),
                     ),
                   ),
                   onSubmitted: (value) {
@@ -750,9 +707,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                       ),
                       child: const Text(
                         'Continue',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
                   ],

@@ -69,6 +69,11 @@ class GlobalState extends ChangeNotifier {
           _academicSelectedCategory == null ||
           resource.category == _academicSelectedCategory;
 
+      final selectedCustomCategory = _academicCustomCategory;
+      final matchesCustomCategory =
+          selectedCustomCategory == null ||
+          _matchesCustomCategory(resource, selectedCustomCategory);
+
       final selectedDepartment = _academicSelectedDepartment;
       final matchesDepartment =
           selectedDepartment == null ||
@@ -77,8 +82,7 @@ class GlobalState extends ChangeNotifier {
 
       final selectedSemester = _academicSelectedSemester;
       final matchesSemester =
-          selectedSemester == null ||
-          resource.semester == selectedSemester;
+          selectedSemester == null || resource.semester == selectedSemester;
 
       final matchesPrice = switch (_academicSelectedPrice) {
         'free' => resource.price <= 0,
@@ -88,6 +92,7 @@ class GlobalState extends ChangeNotifier {
 
       return matchesSearch &&
           matchesCategory &&
+          matchesCustomCategory &&
           matchesDepartment &&
           matchesSemester &&
           matchesPrice;
@@ -108,16 +113,16 @@ class GlobalState extends ChangeNotifier {
   void setCustomCategoryFilter(String? value) {
     final cleaned = value?.trim();
 
-    _academicCustomCategory =
-        cleaned == null || cleaned.isEmpty ? null : cleaned;
+    _academicCustomCategory = cleaned == null || cleaned.isEmpty
+        ? null
+        : cleaned;
 
     _academicSelectedCategory = null;
     notifyListeners();
   }
 
   void resetCategoryFilter() {
-    if (_academicSelectedCategory == null &&
-        _academicCustomCategory == null) {
+    if (_academicSelectedCategory == null && _academicCustomCategory == null) {
       return;
     }
 
@@ -126,10 +131,7 @@ class GlobalState extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool _matchesCustomCategory(
-    AcademicResource resource,
-    String value,
-  ) {
+  bool _matchesCustomCategory(AcademicResource resource, String value) {
     final query = value.trim().toLowerCase();
 
     return resource.type.trim().toLowerCase() == query ||
@@ -140,8 +142,9 @@ class GlobalState extends ChangeNotifier {
   void setDepartmentFilter(String? value) {
     final cleaned = value?.trim();
 
-    _academicSelectedDepartment =
-        cleaned == null || cleaned.isEmpty ? null : cleaned;
+    _academicSelectedDepartment = cleaned == null || cleaned.isEmpty
+        ? null
+        : cleaned;
 
     notifyListeners();
   }
@@ -168,9 +171,7 @@ class GlobalState extends ChangeNotifier {
   void setPriceFilter(String value) {
     final normalized = value.trim().toLowerCase();
 
-    if (normalized != 'all' &&
-        normalized != 'free' &&
-        normalized != 'paid') {
+    if (normalized != 'all' && normalized != 'free' && normalized != 'paid') {
       return;
     }
 

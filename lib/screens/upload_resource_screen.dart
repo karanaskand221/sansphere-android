@@ -27,6 +27,11 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
   final _priceController = TextEditingController(text: '0');
   final _tagsController = TextEditingController();
 
+  // Custom academic-field controllers.
+  final _customCategoryController = TextEditingController();
+  final _customDepartmentController = TextEditingController();
+  final _customSemesterController = TextEditingController();
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late final FirebaseFirestore _vaultFirestore;
@@ -35,6 +40,10 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
   ResourceCategory _selectedCategory = ResourceCategory.lectureNotes;
   String _selectedDepartment = 'Computer Engineering';
   int _selectedSemester = 4;
+
+  bool _isCustomCategory = false;
+  bool _isCustomDepartment = false;
+  bool _isCustomSemester = false;
 
   PlatformFile? _selectedFile;
 
@@ -75,6 +84,9 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
     _uploaderController.dispose();
     _priceController.dispose();
     _tagsController.dispose();
+    _customCategoryController.dispose();
+    _customDepartmentController.dispose();
+    _customSemesterController.dispose();
     super.dispose();
   }
 
@@ -160,11 +172,57 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
     return {};
   }
 
+  String get _categoryTypeValue {
+    if (_isCustomCategory) {
+      return _customCategoryController.text.trim();
+    }
+
+    return _categoryDisplayName(_selectedCategory);
+  }
+
+  String get _departmentValue {
+    if (_isCustomDepartment) {
+      return _customDepartmentController.text.trim();
+    }
+
+    return _selectedDepartment;
+  }
+
+  int? get _semesterValue {
+    if (_isCustomSemester) {
+      return int.tryParse(_customSemesterController.text.trim());
+    }
+
+    return _selectedSemester;
+  }
+
   Future<void> _submitForm() async {
     if (_isUploading) return;
 
     if (!_formKey.currentState!.validate()) {
       return;
+    }
+
+    if (_isCustomCategory && _customCategoryController.text.trim().isEmpty) {
+      _showError('Please enter a category.');
+      return;
+    }
+
+    if (_isCustomDepartment &&
+        _customDepartmentController.text.trim().isEmpty) {
+      _showError('Please enter a department.');
+      return;
+    }
+
+    if (_isCustomSemester) {
+      final customSemester = int.tryParse(
+        _customSemesterController.text.trim(),
+      );
+
+      if (customSemester == null || customSemester <= 0) {
+        _showError('Please enter a valid semester number.');
+        return;
+      }
     }
 
     final file = _selectedFile;
@@ -311,10 +369,15 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         'description': _descriptionController.text.trim(),
         'subject': _subjectController.text.trim(),
         'college': college,
-        'department': _selectedDepartment,
-        'type': _categoryDisplayName(_selectedCategory),
-        'category': _selectedCategory.name,
-        'semester': _selectedSemester,
+        'department': _departmentValue,
+        'type': _categoryTypeValue,
+        // Custom categories are represented safely by the existing
+        // ResourceCategory enum while the user's exact category is
+        // preserved in the existing `type` field.
+        'category': _isCustomCategory
+            ? ResourceCategory.other.name
+            : _selectedCategory.name,
+        'semester': _semesterValue ?? _selectedSemester,
         'price': price,
 
         'fileUrl': downloadUrl,
@@ -528,29 +591,55 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                 const SizedBox(height: 16),
 
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField<ResourceCategory>(
-                        value: _selectedCategory,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _isCustomCategory
+                            ? '__custom_category__'
+                            : _selectedCategory.name,
                         decoration: const InputDecoration(
                           labelText: 'Category',
                           border: OutlineInputBorder(),
                         ),
-                        items: ResourceCategory.values.map((category) {
-                          return DropdownMenuItem(
-                            value: category,
+                        items: [
+                          ...ResourceCategory.values.map(
+                            (category) => DropdownMenuItem<String>(
+                              value: category.name,
+                              child: Text(
+                                category.displayName,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const DropdownMenuItem<String>(
+                            value: '__custom_category__',
                             child: Text(
-                              category.displayName,
+                              'Write by own',
                               overflow: TextOverflow.ellipsis,
                             ),
-                          );
-                        }).toList(),
+                          ),
+                        ],
                         onChanged: _isUploading
                             ? null
                             : (value) {
+                                if (value == '__custom_category__') {
+                                  setState(() {
+                                    _isCustomCategory = true;
+                                  });
+                                  return;
+                                }
+
                                 if (value != null) {
                                   setState(() {
-                                    _selectedCategory = value;
+                                    _isCustomCategory = false;
+                                    _customCategoryController.clear();
+                                    _selectedCategory = ResourceCategory.values
+                                        .firstWhere(
+                                          (category) => category.name == value,
+                                          orElse: () =>
+                                              ResourceCategory.lectureNotes,
+                                        );
                                   });
                                 }
                               },
@@ -560,26 +649,48 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                     const SizedBox(width: 12),
 
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        value: _selectedSemester,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _isCustomSemester
+                            ? '__custom_semester__'
+                            : _selectedSemester.toString(),
                         decoration: const InputDecoration(
                           labelText: 'Semester',
                           border: OutlineInputBorder(),
                         ),
-                        items: List.generate(8, (index) {
-                          final semester = index + 1;
+                        items: [
+                          ...List.generate(8, (index) {
+                            final semester = index + 1;
 
-                          return DropdownMenuItem(
-                            value: semester,
-                            child: Text('Sem $semester'),
-                          );
-                        }),
+                            return DropdownMenuItem<String>(
+                              value: semester.toString(),
+                              child: Text('Sem $semester'),
+                            );
+                          }),
+                          const DropdownMenuItem<String>(
+                            value: '__custom_semester__',
+                            child: Text(
+                              'Write by own',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                         onChanged: _isUploading
                             ? null
                             : (value) {
-                                if (value != null) {
+                                if (value == '__custom_semester__') {
                                   setState(() {
-                                    _selectedSemester = value;
+                                    _isCustomSemester = true;
+                                  });
+                                  return;
+                                }
+
+                                final semester = int.tryParse(value ?? '');
+
+                                if (semester != null) {
+                                  setState(() {
+                                    _isCustomSemester = false;
+                                    _customSemesterController.clear();
+                                    _selectedSemester = semester;
                                   });
                                 }
                               },
@@ -588,30 +699,128 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
                   ],
                 ),
 
+                if (_isCustomCategory) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _customCategoryController,
+                    enabled: !_isUploading,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Custom Category',
+                      hintText: 'e.g. Data Science',
+                      prefixIcon: Icon(Icons.edit_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (!_isCustomCategory) return null;
+
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a category';
+                      }
+
+                      return null;
+                    },
+                  ),
+                ],
+
+                if (_isCustomSemester) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _customSemesterController,
+                    enabled: !_isUploading,
+                    keyboardType: TextInputType.number,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Custom Semester',
+                      hintText: 'e.g. 9',
+                      prefixIcon: Icon(Icons.edit_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (!_isCustomSemester) return null;
+
+                      final semester = int.tryParse(value?.trim() ?? '');
+
+                      if (semester == null || semester <= 0) {
+                        return 'Enter a valid semester number';
+                      }
+
+                      return null;
+                    },
+                  ),
+                ],
+
                 const SizedBox(height: 16),
 
                 DropdownButtonFormField<String>(
-                  value: _selectedDepartment,
+                  initialValue: _isCustomDepartment
+                      ? '__custom_department__'
+                      : _selectedDepartment,
                   decoration: const InputDecoration(
                     labelText: 'Department',
                     border: OutlineInputBorder(),
                   ),
-                  items: _departments.map((department) {
-                    return DropdownMenuItem(
-                      value: department,
-                      child: Text(department, overflow: TextOverflow.ellipsis),
-                    );
-                  }).toList(),
+                  items: [
+                    ..._departments.map(
+                      (department) => DropdownMenuItem<String>(
+                        value: department,
+                        child: Text(
+                          department,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const DropdownMenuItem<String>(
+                      value: '__custom_department__',
+                      child: Text(
+                        'Write by own',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                   onChanged: _isUploading
                       ? null
                       : (value) {
+                          if (value == '__custom_department__') {
+                            setState(() {
+                              _isCustomDepartment = true;
+                            });
+                            return;
+                          }
+
                           if (value != null) {
                             setState(() {
+                              _isCustomDepartment = false;
+                              _customDepartmentController.clear();
                               _selectedDepartment = value;
                             });
                           }
                         },
                 ),
+
+                if (_isCustomDepartment) ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _customDepartmentController,
+                    enabled: !_isUploading,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Custom Department',
+                      hintText: 'e.g. Chemical Engineering',
+                      prefixIcon: Icon(Icons.edit_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (!_isCustomDepartment) return null;
+
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a department';
+                      }
+
+                      return null;
+                    },
+                  ),
+                ],
 
                 const SizedBox(height: 16),
 
