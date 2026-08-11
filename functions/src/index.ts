@@ -595,3 +595,256 @@ export const createUserWallet = onDocumentCreated(
     console.log(`SanCoin wallet initialized for ${uid}`);
   },
 );
+
+
+/**
+ * Delete an uploaded academic resource permanently.
+ *
+ * Only the original uploader can perform this operation.
+ *
+ * Deletes:
+ * 1. The Storage file.
+ * 2. All purchase records for the resource.
+ * 3. The academic_vault document.
+ *
+ * This intentionally does NOT refund SanCoins because the
+ * original purchase transaction has already been completed.
+ */
+export const deleteAcademicResource = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const resourceId = String(
+    request.data?.resourceId ?? "",
+  ).trim();
+
+  if (!resourceId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "resourceId required.",
+    );
+  }
+
+  const resourceRef =
+    vaultDb.collection("academic_vault").doc(resourceId);
+
+  const resourceSnap = await resourceRef.get();
+
+  if (!resourceSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Resource not found.",
+    );
+  }
+
+  const resource = resourceSnap.data() ?? {};
+
+  if (resource.uploaderId !== uid) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the uploader can delete this resource.",
+    );
+  }
+
+  const storagePath = String(
+    resource.storagePath ?? "",
+  ).trim();
+
+  /*
+   * Remove all purchase records associated with this resource.
+   */
+  const purchasesSnap = await userDb
+    .collection("purchases")
+    .where("resourceId", "==", resourceId)
+    .get();
+
+  /*
+   * Firestore batches have a write limit.
+   * Delete in safe chunks.
+   */
+  const purchaseDocs = purchasesSnap.docs;
+
+  for (let i = 0; i < purchaseDocs.length; i += 450) {
+    const chunk = purchaseDocs.slice(i, i + 450);
+    const batch = userDb.batch();
+
+    for (const purchaseDoc of chunk) {
+      batch.delete(purchaseDoc.ref);
+    }
+
+    await batch.commit();
+  }
+
+  /*
+   * Delete the actual uploaded file.
+   */
+  if (storagePath) {
+    await bucket
+      .file(storagePath)
+      .delete({ignoreNotFound: true});
+  }
+
+  /*
+   * Finally remove the resource from SanVault.
+   */
+  await resourceRef.delete();
+
+  return {
+    success: true,
+    resourceId,
+    deletedPurchases: purchaseDocs.length,
+  };
+});
+
+
+/**
+ * Delete only the current user's purchase record.
+ *
+ * This does NOT delete the original resource.
+ * It only removes the resource from "Your Purchases".
+ */
+export const deletePurchase = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const resourceId = String(
+    request.data?.resourceId ?? "",
+  ).trim();
+
+  if (!resourceId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "resourceId required.",
+    );
+  }
+
+  const purchaseRef = userDb
+    .collection("purchases")
+    .doc(`${uid}_${resourceId}`);
+
+  const purchaseSnap = await purchaseRef.get();
+
+  if (!purchaseSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Purchase not found.",
+    );
+  }
+
+  const purchase = purchaseSnap.data() ?? {};
+
+  if (purchase.buyerId !== uid) {
+    throw new HttpsError(
+      "permission-denied",
+      "You can only delete your own purchase.",
+    );
+  }
+
+  await purchaseRef.delete();
+
+  return {
+    success: true,
+    resourceId,
+  };
+});
+
+
+/**
+ * Delete an uploaded academic resource completely.
+ *
+ * Only the original uploader can perform this operation.
+ *
+ * Deletes:
+ * 1. Firebase Storage file
+ * 2. SanVault academic_vault document
+ * 3. Every purchase record associated with this resource
+ *
+ * Existing SanCoins transactions are NOT reversed.
+ */
+export const deleteUploadedResource = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const resourceId = String(
+    request.data?.resourceId ?? "",
+  ).trim();
+
+  if (!resourceId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "resourceId required.",
+    );
+  }
+
+  const resourceRef = vaultDb
+    .collection("academic_vault")
+    .doc(resourceId);
+
+  const resourceSnap = await resourceRef.get();
+
+  if (!resourceSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Resource not found.",
+    );
+  }
+
+  const resource = resourceSnap.data() ?? {};
+
+  if (resource.uploaderId !== uid) {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the original uploader can delete this resource.",
+    );
+  }
+
+  const storagePath = resource.storagePath;
+
+  /*
+   * Delete the actual Storage file first.
+   *
+   * ignoreNotFound allows cleanup to continue if the file
+   * was already removed.
+   */
+  if (storagePath) {
+    try {
+      await bucket
+        .file(String(storagePath))
+        .delete({ignoreNotFound: true});
+    } catch (error) {
+      console.error(
+        "Storage deletion failed:",
+        error,
+      );
+
+      throw new HttpsError(
+        "internal",
+        "Could not delete the uploaded file.",
+      );
+    }
+  }
+
+  /*
+   * Delete every purchase record associated with this resource.
+   */
+  const purchasesQuery = await userDb
+    .collection("purchases")
+    .where("resourceId", "==", resourceId)
+    .get();
+
+  const batch = userDb.batch();
+
+  for (const purchaseDoc of purchasesQuery.docs) {
+    batch.delete(purchaseDoc.ref);
+  }
+
+  /*
+   * Delete the SanVault resource document.
+   */
+  batch.delete(resourceRef);
+
+  await batch.commit();
+
+  return {
+    success: true,
+    resourceId,
+    deletedPurchaseRecords: purchasesQuery.size,
+  };
+});

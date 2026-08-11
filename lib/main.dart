@@ -12,6 +12,9 @@ import 'screens/auth/login_screen.dart';
 import 'screens/reels_screen.dart';
 import 'screens/chat_list_screen.dart';
 import 'screens/profile_screen.dart';
+import 'theme/app_theme.dart';
+import 'theme/app_colors.dart';
+import 'widgets/ambient_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,16 +30,9 @@ class SanSphereApp extends StatelessWidget {
     return MaterialApp(
       title: 'SanSphere',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: const Color(0xFF2563EB),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          primary: const Color(0xFF2563EB),
-          surface: const Color(0xFFF8FAFC),
-        ),
-      ),
+      theme: AppTheme.dark,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
       home: const AuthGate(),
     );
   }
@@ -89,33 +85,78 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: pages),
-      bottomNavigationBar: BottomNavigationBar(
+      body: AmbientBackground(
+        child: IndexedStack(index: _currentIndex, children: pages),
+      ),
+      bottomNavigationBar: _FloatingGlassNavigation(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2563EB),
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Vault',
+      ),
+    );
+  }
+}
+
+class _FloatingGlassNavigation extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingGlassNavigation({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppColors.border,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.video_library_rounded),
-            label: 'Reels',
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.07),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: NavigationBar(
+            height: 68,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedIndex: currentIndex,
+            onDestinationSelected: onTap,
+            indicatorColor: const Color(0xFFE0E7FF),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.school_outlined),
+                selectedIcon: Icon(Icons.school),
+                label: 'Vault',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.play_circle_outline),
+                selectedIcon: Icon(Icons.play_circle),
+                label: 'Reels',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.chat_bubble_outline),
+                selectedIcon: Icon(Icons.chat_bubble),
+                label: 'Chats',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_rounded),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
+        ),
       ),
     );
   }

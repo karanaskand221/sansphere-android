@@ -104,6 +104,21 @@ class SanCoinService {
     return data['purchased'] == true;
   }
 
+  Future<void> deleteUploadedResource(String resourceId) async {
+    final cleanResourceId = resourceId.trim();
+
+    if (cleanResourceId.isEmpty) {
+      throw ArgumentError('Resource ID required.');
+    }
+
+    await _functions
+        .httpsCallable('deleteUploadedResource')
+        .call({
+      'resourceId': cleanResourceId,
+    });
+  }
+
+
   Future<String> getPurchasedFileUrl(
     String resourceId,
   ) async {
@@ -122,4 +137,21 @@ class SanCoinService {
 
     return url;
   }
+
+  Future<void> deletePurchase(
+    String resourceId,
+  ) async {
+    final cleanResourceId = resourceId.trim();
+
+    if (cleanResourceId.isEmpty) {
+      throw ArgumentError('Resource ID required.');
+    }
+
+    await _functions
+        .httpsCallable('deletePurchase')
+        .call({
+      'resourceId': cleanResourceId,
+    });
+  }
+
 }
