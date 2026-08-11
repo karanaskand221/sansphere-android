@@ -36,10 +36,13 @@ class GlobalState extends ChangeNotifier {
   String _academicSearchQuery = '';
 
   ResourceCategory? _academicSelectedCategory;
+  String? _academicSelectedDepartment;
 
   String get searchQuery => _academicSearchQuery;
 
   ResourceCategory? get selectedCategory => _academicSelectedCategory;
+
+  String? get selectedDepartment => _academicSelectedDepartment;
 
   List<AcademicResource> get filteredResources {
     final query = _academicSearchQuery.trim().toLowerCase();
@@ -57,7 +60,13 @@ class GlobalState extends ChangeNotifier {
           _academicSelectedCategory == null ||
           resource.category == _academicSelectedCategory;
 
-      return matchesSearch && matchesCategory;
+      final selectedDepartment = _academicSelectedDepartment;
+      final matchesDepartment =
+          selectedDepartment == null ||
+          resource.department.trim().toLowerCase() ==
+              selectedDepartment.trim().toLowerCase();
+
+      return matchesSearch && matchesCategory && matchesDepartment;
     }).toList();
   }
 
@@ -71,9 +80,26 @@ class GlobalState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setDepartmentFilter(String? value) {
+    final cleaned = value?.trim();
+
+    _academicSelectedDepartment =
+        cleaned == null || cleaned.isEmpty ? null : cleaned;
+
+    notifyListeners();
+  }
+
+  void resetDepartmentFilter() {
+    if (_academicSelectedDepartment == null) return;
+
+    _academicSelectedDepartment = null;
+    notifyListeners();
+  }
+
   void resetFilters() {
     _academicSearchQuery = '';
     _academicSelectedCategory = null;
+    _academicSelectedDepartment = null;
     notifyListeners();
   }
 }

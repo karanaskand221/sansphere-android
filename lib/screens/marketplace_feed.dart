@@ -17,6 +17,16 @@ class MarketplaceFeedScreen extends StatefulWidget {
   State<MarketplaceFeedScreen> createState() => _MarketplaceFeedScreenState();
 }
 
+class _AcademicCategory {
+  final String name;
+  final IconData icon;
+
+  const _AcademicCategory({
+    required this.name,
+    required this.icon,
+  });
+}
+
 class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
   final TextEditingController _searchController = TextEditingController();
   final PageController _pageController = PageController(viewportFraction: 0.91);
@@ -79,6 +89,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               slivers: [
                 _buildTopBar(),
                 _buildSearchAndFilters(),
+                _buildAcademicCategories(resources),
                 if (resources.isNotEmpty) ...[
                   _buildHeroSection(resources),
                   _buildFeaturedHeader(resources.length),
@@ -251,6 +262,515 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAcademicCategories(List<AcademicResource> resources) {
+    const categories = <_AcademicCategory>[
+      _AcademicCategory(
+        name: 'Computer Science',
+        icon: Icons.computer_rounded,
+      ),
+      _AcademicCategory(
+        name: 'Electronics',
+        icon: Icons.bolt_rounded,
+      ),
+      _AcademicCategory(
+        name: 'Civil',
+        icon: Icons.architecture_rounded,
+      ),
+      _AcademicCategory(
+        name: 'Chemical',
+        icon: Icons.science_rounded,
+      ),
+    ];
+
+    final selected = widget.globalState.selectedDepartment;
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Academic Categories',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                if (selected != null)
+                  GestureDetector(
+                    onTap: widget.globalState.resetDepartmentFilter,
+                    child: const Text(
+                      'Clear',
+                      style: TextStyle(
+                        color: _cyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Explore resources by your engineering stream',
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 14),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: categories.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 11,
+                mainAxisSpacing: 11,
+                childAspectRatio: 1.45,
+              ),
+              itemBuilder: (context, index) {
+                final category = categories[index];
+
+                return _buildAcademicCategoryCard(
+                  name: category.name,
+                  icon: category.icon,
+                  selected: selected?.toLowerCase() ==
+                      category.name.toLowerCase(),
+                  resourceCount: resources
+                      .where(
+                        (resource) =>
+                            resource.department.trim().toLowerCase() ==
+                            category.name.toLowerCase(),
+                      )
+                      .length,
+                  onTap: () {
+                    if (selected?.toLowerCase() ==
+                        category.name.toLowerCase()) {
+                      widget.globalState.resetDepartmentFilter();
+                    } else {
+                      widget.globalState.setDepartmentFilter(category.name);
+                    }
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 11),
+            _buildCustomCategoryCard(selected),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAcademicCategoryCard({
+    required String name,
+    required IconData icon,
+    required bool selected,
+    required int resourceCount,
+    required VoidCallback onTap,
+  }) {
+    final accent = selected ? _cyan : _blue;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(19),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(19),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: selected
+                    ? _cyan.withOpacity(.10)
+                    : Colors.white.withOpacity(.045),
+                borderRadius: BorderRadius.circular(19),
+                border: Border.all(
+                  color: selected
+                      ? _cyan.withOpacity(.58)
+                      : Colors.white.withOpacity(.105),
+                  width: selected ? 1.2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withOpacity(selected ? .16 : .07),
+                    blurRadius: 18,
+                    spreadRadius: selected ? 1 : 0,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -8,
+                    bottom: -12,
+                    child: Icon(
+                      icon,
+                      size: 72,
+                      color: accent.withOpacity(.055),
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: accent.withOpacity(.09),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: accent.withOpacity(.22),
+                              ),
+                            ),
+                            child: Icon(
+                              icon,
+                              color: accent,
+                              size: 20,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (selected)
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: _cyan.withOpacity(.14),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: _cyan.withOpacity(.45),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                color: _cyan,
+                                size: 13,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected ? Colors.white : Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '$resourceCount ${resourceCount == 1 ? 'resource' : 'resources'}',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomCategoryCard(String? selected) {
+    final isCustom =
+        selected != null &&
+        ![
+          'Computer Science',
+          'Electronics',
+          'Civil',
+          'Chemical',
+        ].any((item) => item.toLowerCase() == selected.toLowerCase());
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(19),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _showCustomCategoryDialog,
+            borderRadius: BorderRadius.circular(19),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 15,
+              ),
+              decoration: BoxDecoration(
+                color: isCustom
+                    ? _purple.withOpacity(.10)
+                    : Colors.white.withOpacity(.035),
+                borderRadius: BorderRadius.circular(19),
+                border: Border.all(
+                  color: isCustom
+                      ? _purple.withOpacity(.55)
+                      : _purple.withOpacity(.25),
+                  width: isCustom ? 1.2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _purple.withOpacity(isCustom ? .14 : .045),
+                    blurRadius: 18,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: _purple.withOpacity(.09),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _purple.withOpacity(.25),
+                      ),
+                    ),
+                    child: Icon(
+                      isCustom
+                          ? Icons.check_rounded
+                          : Icons.add_rounded,
+                      color: _purple,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isCustom ? selected! : 'Write Your Own',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          isCustom
+                              ? 'Custom category selected'
+                              : 'Create a custom academic category',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: _purple.withOpacity(.65),
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCustomCategoryDialog() async {
+    final controller = TextEditingController(
+      text: widget.globalState.selectedDepartment != null &&
+              ![
+                'Computer Science',
+                'Electronics',
+                'Civil',
+                'Chemical',
+              ].any(
+                (item) =>
+                    item.toLowerCase() ==
+                    widget.globalState.selectedDepartment!.toLowerCase(),
+              )
+          ? widget.globalState.selectedDepartment
+          : '',
+    );
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: const Color(0xFF0D1422),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: _purple.withOpacity(.28),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _purple.withOpacity(.10),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: _purple,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Create Your Category',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Type any academic stream or subject area.',
+                  style: TextStyle(
+                    color: Color(0x73FFFFFF),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  maxLength: 40,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
+                  cursorColor: _purple,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Mechanical Engineering',
+                    hintStyle: const TextStyle(
+                      color: Colors.white30,
+                      fontSize: 12,
+                    ),
+                    counterStyle: const TextStyle(
+                      color: Colors.white24,
+                      fontSize: 9,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(.045),
+                    prefixIcon: const Icon(
+                      Icons.category_rounded,
+                      color: _purple,
+                      size: 20,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(.10),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(.10),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(
+                        color: _purple.withOpacity(.55),
+                      ),
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    final cleaned = value.trim();
+                    if (cleaned.isNotEmpty) {
+                      Navigator.of(dialogContext).pop(cleaned);
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ElevatedButton(
+                      onPressed: () {
+                        final cleaned = controller.text.trim();
+                        if (cleaned.isNotEmpty) {
+                          Navigator.of(dialogContext).pop(cleaned);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _purple,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    controller.dispose();
+
+    if (!mounted || result == null || result.trim().isEmpty) {
+      return;
+    }
+
+    widget.globalState.setDepartmentFilter(result.trim());
   }
 
   Widget _buildFilterChip({
