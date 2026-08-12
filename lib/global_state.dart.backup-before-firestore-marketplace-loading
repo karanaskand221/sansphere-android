@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'models/academic_resource.dart';
 
 class GlobalState extends ChangeNotifier {
@@ -28,7 +27,6 @@ class GlobalState extends ChangeNotifier {
 
     try {
       final firestore = FirebaseFirestore.instanceFor(
-        app: Firebase.app(),
         databaseId: 'sanvault',
       );
 
@@ -43,14 +41,18 @@ class GlobalState extends ChangeNotifier {
         final data = Map<String, dynamic>.from(doc.data());
         data['id'] = doc.id;
 
-        loadedResources.add(AcademicResource.fromMap(data));
+        loadedResources.add(
+          AcademicResource.fromMap(data),
+        );
       }
 
       _resources
         ..clear()
         ..addAll(loadedResources);
     } catch (error) {
-      debugPrint('GlobalState: failed to load academic resources: $error');
+      debugPrint(
+        'GlobalState: failed to load academic resources: $error',
+      );
     } finally {
       _isLoadingResources = false;
       notifyListeners();

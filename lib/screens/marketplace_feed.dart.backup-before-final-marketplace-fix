@@ -91,8 +91,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
     return ListenableBuilder(
       listenable: widget.globalState,
       builder: (context, _) {
-        final allResources = widget.globalState.resources;
-
         final resources = widget.globalState.filteredResources;
 
         return Scaffold(
@@ -105,9 +103,10 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               slivers: [
                 _buildTopBar(),
                 _buildSearchAndFilters(),
-                _buildHeroSection(resources),
-                _buildAcademicCategories(allResources),
+                  _buildHeroSection(resources),
+                _buildAcademicCategories(resources),
                 if (resources.isNotEmpty) ...[
+
                   _buildTrendingSection(resources),
                   _buildTopRatedSection(resources),
                   _buildFreeSection(resources),

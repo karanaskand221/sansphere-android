@@ -17,16 +17,17 @@ class MarketplaceFeedScreen extends StatefulWidget {
   State<MarketplaceFeedScreen> createState() => _MarketplaceFeedScreenState();
 }
 
+
 class _MarketplaceScrollBehavior extends MaterialScrollBehavior {
   const _MarketplaceScrollBehavior();
 
   @override
   Set<PointerDeviceKind> get dragDevices => {
-    PointerDeviceKind.touch,
-    PointerDeviceKind.mouse,
-    PointerDeviceKind.trackpad,
-    PointerDeviceKind.stylus,
-  };
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
 }
 
 class _AcademicCategory {
@@ -51,11 +52,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
   void initState() {
     super.initState();
     _searchController.text = widget.globalState.searchQuery;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.globalState.loadResourcesFromFirestore();
-    });
   }
 
   @override
@@ -91,8 +87,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
     return ListenableBuilder(
       listenable: widget.globalState,
       builder: (context, _) {
-        final allResources = widget.globalState.resources;
-
         final resources = widget.globalState.filteredResources;
 
         return Scaffold(
@@ -105,9 +99,10 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               slivers: [
                 _buildTopBar(),
                 _buildSearchAndFilters(),
-                _buildHeroSection(resources),
-                _buildAcademicCategories(allResources),
+                _buildAcademicCategories(resources),
                 if (resources.isNotEmpty) ...[
+                  _buildHeroSection(resources),
+
                   _buildTrendingSection(resources),
                   _buildTopRatedSection(resources),
                   _buildFreeSection(resources),
@@ -259,6 +254,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               height: 37,
               child: ListView(
                 scrollDirection: Axis.horizontal,
+                  dragStartBehavior: DragStartBehavior.start,
                 physics: const BouncingScrollPhysics(),
                 children: [
                   _buildFilterChip(
@@ -300,13 +296,18 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
 
       if (seen.add(key)) {
         categories.add(
-          _AcademicCategory(name: value, icon: _iconForDepartment(value)),
+          _AcademicCategory(
+            name: value,
+            icon: _iconForDepartment(value),
+          ),
         );
       }
     }
 
     categories.sort(
-      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      (a, b) => a.name.toLowerCase().compareTo(
+        b.name.toLowerCase(),
+      ),
     );
 
     final selected = widget.globalState.selectedDepartment;
@@ -380,8 +381,8 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                       widget.globalState.resetDepartmentFilter();
                     } else {
                       widget.globalState.setCategoryFilter(null);
-                      widget.globalState.setCustomCategoryFilter(null);
-                      widget.globalState.setDepartmentFilter(category.name);
+                            widget.globalState.setCustomCategoryFilter(null);
+                            widget.globalState.setDepartmentFilter(category.name);
                     }
                   },
                 );
@@ -848,17 +849,16 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
             child: ScrollConfiguration(
               behavior: const _MarketplaceScrollBehavior(),
               child: PageView.builder(
-                controller: _pageController,
-                itemCount: featured.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentCarouselIndex = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildHeroCard(featured[index], index);
-                },
-              ),
+              controller: _pageController,
+              itemCount: featured.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentCarouselIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return _buildHeroCard(featured[index], index);
+              },
             ),
           ),
           const SizedBox(height: 10),
@@ -1184,6 +1184,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   scrollDirection: Axis.horizontal,
+                  dragStartBehavior: DragStartBehavior.start,
                   physics: const BouncingScrollPhysics(),
                   itemCount: resources.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 11),

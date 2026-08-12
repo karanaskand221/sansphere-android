@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'models/academic_resource.dart';
 
 class GlobalState extends ChangeNotifier {
@@ -10,77 +8,14 @@ class GlobalState extends ChangeNotifier {
 
   final List<AcademicResource> _resources = [];
 
-  bool _isLoadingResources = false;
-
-  bool get isLoadingResources => _isLoadingResources;
-
   List<AcademicResource> get resources => List.unmodifiable(_resources);
 
-  // ==========================================================
-  // Academic Vault / Firestore resource loading
-  // ==========================================================
-
-  Future<void> loadResourcesFromFirestore() async {
-    if (_isLoadingResources) return;
-
-    _isLoadingResources = true;
-    notifyListeners();
-
-    try {
-      final firestore = FirebaseFirestore.instanceFor(
-        app: Firebase.app(),
-        databaseId: 'sanvault',
-      );
-
-      final snapshot = await firestore
-          .collection('academic_vault')
-          .where('status', isEqualTo: 'published')
-          .get();
-
-      final loadedResources = <AcademicResource>[];
-
-      for (final doc in snapshot.docs) {
-        final data = Map<String, dynamic>.from(doc.data());
-        data['id'] = doc.id;
-
-        loadedResources.add(AcademicResource.fromMap(data));
-      }
-
-      _resources
-        ..clear()
-        ..addAll(loadedResources);
-    } catch (error) {
-      debugPrint('GlobalState: failed to load academic resources: $error');
-    } finally {
-      _isLoadingResources = false;
-      notifyListeners();
-    }
-  }
-
   void addResource(dynamic resource) {
-    AcademicResource? academicResource;
-
     if (resource is AcademicResource) {
-      academicResource = resource;
+      _resources.add(resource);
     } else if (resource is Map<String, dynamic>) {
-      academicResource = AcademicResource.fromMap(resource);
+      _resources.add(AcademicResource.fromMap(resource));
     }
-
-    if (academicResource == null) return;
-
-    final existingIndex = _resources.indexWhere(
-      (item) =>
-          item.id == academicResource!.id ||
-          (academicResource.customDocId.isNotEmpty &&
-              item.customDocId == academicResource.customDocId),
-    );
-
-    if (existingIndex >= 0) {
-      _resources[existingIndex] = academicResource;
-    } else {
-      _resources.add(academicResource);
-    }
-
     notifyListeners();
   }
 

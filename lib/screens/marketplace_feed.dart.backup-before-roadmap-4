@@ -17,18 +17,6 @@ class MarketplaceFeedScreen extends StatefulWidget {
   State<MarketplaceFeedScreen> createState() => _MarketplaceFeedScreenState();
 }
 
-class _MarketplaceScrollBehavior extends MaterialScrollBehavior {
-  const _MarketplaceScrollBehavior();
-
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-    PointerDeviceKind.touch,
-    PointerDeviceKind.mouse,
-    PointerDeviceKind.trackpad,
-    PointerDeviceKind.stylus,
-  };
-}
-
 class _AcademicCategory {
   final String name;
   final IconData icon;
@@ -51,11 +39,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
   void initState() {
     super.initState();
     _searchController.text = widget.globalState.searchQuery;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.globalState.loadResourcesFromFirestore();
-    });
   }
 
   @override
@@ -91,8 +74,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
     return ListenableBuilder(
       listenable: widget.globalState,
       builder: (context, _) {
-        final allResources = widget.globalState.resources;
-
         final resources = widget.globalState.filteredResources;
 
         return Scaffold(
@@ -105,14 +86,9 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               slivers: [
                 _buildTopBar(),
                 _buildSearchAndFilters(),
-                _buildHeroSection(resources),
-                _buildAcademicCategories(allResources),
+                _buildAcademicCategories(resources),
                 if (resources.isNotEmpty) ...[
-                  _buildTrendingSection(resources),
-                  _buildTopRatedSection(resources),
-                  _buildFreeSection(resources),
-                  _buildRecentlyAddedSection(resources),
-
+                  _buildHeroSection(resources),
                   _buildFeaturedHeader(resources.length),
                   _buildResourceList(resources),
                 ] else
@@ -287,27 +263,12 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
   }
 
   Widget _buildAcademicCategories(List<AcademicResource> resources) {
-    final categories = <_AcademicCategory>[];
-
-    final seen = <String>{};
-
-    for (final resource in resources) {
-      final value = resource.department.trim();
-
-      if (value.isEmpty) continue;
-
-      final key = value.toLowerCase();
-
-      if (seen.add(key)) {
-        categories.add(
-          _AcademicCategory(name: value, icon: _iconForDepartment(value)),
-        );
-      }
-    }
-
-    categories.sort(
-      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-    );
+    const categories = <_AcademicCategory>[
+      _AcademicCategory(name: 'Computer Science', icon: Icons.computer_rounded),
+      _AcademicCategory(name: 'Electronics', icon: Icons.bolt_rounded),
+      _AcademicCategory(name: 'Civil', icon: Icons.architecture_rounded),
+      _AcademicCategory(name: 'Chemical', icon: Icons.science_rounded),
+    ];
 
     final selected = widget.globalState.selectedDepartment;
 
@@ -379,8 +340,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                         category.name.toLowerCase()) {
                       widget.globalState.resetDepartmentFilter();
                     } else {
-                      widget.globalState.setCategoryFilter(null);
-                      widget.globalState.setCustomCategoryFilter(null);
                       widget.globalState.setDepartmentFilter(category.name);
                     }
                   },
@@ -510,36 +469,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
         ),
       ),
     );
-  }
-
-  IconData _iconForDepartment(String value) {
-    final v = value.toLowerCase();
-
-    if (v.contains('computer') || v.contains('software')) {
-      return Icons.computer_rounded;
-    }
-
-    if (v.contains('electronic') || v.contains('electrical')) {
-      return Icons.bolt_rounded;
-    }
-
-    if (v.contains('civil')) {
-      return Icons.architecture_rounded;
-    }
-
-    if (v.contains('chemical')) {
-      return Icons.science_rounded;
-    }
-
-    if (v.contains('mechanical')) {
-      return Icons.precision_manufacturing_rounded;
-    }
-
-    if (v.contains('information') || v.contains('it')) {
-      return Icons.memory_rounded;
-    }
-
-    return Icons.school_rounded;
   }
 
   Widget _buildCustomCategoryCard(String? selected) {
@@ -845,20 +774,17 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
           const SizedBox(height: 15),
           SizedBox(
             height: 183,
-            child: ScrollConfiguration(
-              behavior: const _MarketplaceScrollBehavior(),
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: featured.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentCarouselIndex = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildHeroCard(featured[index], index);
-                },
-              ),
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: featured.length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentCarouselIndex = index;
+                });
+              },
+              itemBuilder: (context, index) {
+                return _buildHeroCard(featured[index], index);
+              },
             ),
           ),
           const SizedBox(height: 10),
@@ -1020,323 +946,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               style: const TextStyle(color: Colors.white38, fontSize: 11),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // ROADMAP #4 — TRENDING / TOP-RATED / FREE / RECENTLY ADDED
-  // ============================================================
-
-  List<AcademicResource> _trendingResources(List<AcademicResource> resources) {
-    final items = List<AcademicResource>.from(resources);
-
-    items.sort((a, b) => b.downloadCount.compareTo(a.downloadCount));
-
-    return items.take(6).toList();
-  }
-
-  List<AcademicResource> _topRatedResources(List<AcademicResource> resources) {
-    final items = resources.where((resource) => resource.rating > 0).toList();
-
-    items.sort((a, b) => b.rating.compareTo(a.rating));
-
-    return items.take(6).toList();
-  }
-
-  List<AcademicResource> _freeResources(List<AcademicResource> resources) {
-    return resources
-        .where((resource) => _normalizedPrice(resource) == 0)
-        .take(6)
-        .toList();
-  }
-
-  List<AcademicResource> _recentlyAddedResources(
-    List<AcademicResource> resources,
-  ) {
-    // The marketplace feed already receives resources in their
-    // current backend/global-state ordering. Reverse that order
-    // so the newest entries appear first without changing the
-    // AcademicResource model or existing filtering behavior.
-    return resources.reversed.take(6).toList();
-  }
-
-  Widget _buildTrendingSection(List<AcademicResource> resources) {
-    final items = _trendingResources(resources);
-
-    return _buildHorizontalResourceSection(
-      title: 'Trending Resources',
-      icon: Icons.local_fire_department_rounded,
-      accent: Colors.orangeAccent,
-      resources: items,
-      emptyText: 'No trending resources yet',
-    );
-  }
-
-  Widget _buildTopRatedSection(List<AcademicResource> resources) {
-    final items = _topRatedResources(resources);
-
-    return _buildHorizontalResourceSection(
-      title: 'Top-rated Resources',
-      icon: Icons.star_rounded,
-      accent: Colors.amber,
-      resources: items,
-      emptyText: 'No rated resources yet',
-    );
-  }
-
-  Widget _buildFreeSection(List<AcademicResource> resources) {
-    final items = _freeResources(resources);
-
-    return _buildHorizontalResourceSection(
-      title: 'Free Resources',
-      icon: Icons.card_giftcard_rounded,
-      accent: Colors.greenAccent,
-      resources: items,
-      emptyText: 'No free resources available',
-    );
-  }
-
-  Widget _buildRecentlyAddedSection(List<AcademicResource> resources) {
-    final items = _recentlyAddedResources(resources);
-
-    return _buildHorizontalResourceSection(
-      title: 'Recently Added',
-      icon: Icons.fiber_new_rounded,
-      accent: _cyan,
-      resources: items,
-      emptyText: 'No recently added resources',
-    );
-  }
-
-  Widget _buildHorizontalResourceSection({
-    required String title,
-    required IconData icon,
-    required Color accent,
-    required List<AcademicResource> resources,
-    required String emptyText,
-  }) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 19),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Icon(icon, color: accent, size: 18),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  if (resources.isNotEmpty)
-                    TextButton(
-                      onPressed: () {
-                        if (resources.firstOrNull != null) {
-                          _openResource(resources.first);
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: accent,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        'See All',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (resources.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Text(
-                  emptyText,
-                  style: const TextStyle(color: Colors.white30, fontSize: 11),
-                ),
-              )
-            else
-              SizedBox(
-                height: 177,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: resources.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 11),
-                  itemBuilder: (context, index) {
-                    return _buildCompactResourceCard(resources[index], accent);
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactResourceCard(AcademicResource resource, Color accent) {
-    final price = _normalizedPrice(resource);
-    final isFree = price == 0;
-
-    return SizedBox(
-      width: 225,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(19),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _openResource(resource),
-              borderRadius: BorderRadius.circular(19),
-              child: Container(
-                padding: const EdgeInsets.all(13),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(.045),
-                  borderRadius: BorderRadius.circular(19),
-                  border: Border.all(color: accent.withOpacity(.22)),
-                  boxShadow: [
-                    BoxShadow(color: accent.withOpacity(.055), blurRadius: 16),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: accent.withOpacity(.10),
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          child: Icon(
-                            _getCategoryIcon(resource.category),
-                            color: accent,
-                            size: 18,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isFree)
-                          _miniBadge('FREE', Colors.greenAccent)
-                        else
-                          _miniBadge('$price 🪙', accent),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      resource.title.isEmpty
-                          ? 'Untitled Resource'
-                          : resource.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      resource.subject.isEmpty
-                          ? 'Academic Resource'
-                          : resource.subject,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 9,
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Colors.amber,
-                          size: 13,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          resource.rating.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: Colors.white60,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 9),
-                        const Icon(
-                          Icons.download_rounded,
-                          color: Colors.white30,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${resource.downloadCount}',
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 9,
-                          ),
-                        ),
-                        const Spacer(),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          color: accent.withOpacity(.75),
-                          size: 15,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _miniBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(.10),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(.28)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: color,
-          fontSize: 8,
-          fontWeight: FontWeight.w900,
         ),
       ),
     );

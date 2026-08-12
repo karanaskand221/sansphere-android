@@ -51,11 +51,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
   void initState() {
     super.initState();
     _searchController.text = widget.globalState.searchQuery;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.globalState.loadResourcesFromFirestore();
-    });
   }
 
   @override
@@ -91,8 +86,6 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
     return ListenableBuilder(
       listenable: widget.globalState,
       builder: (context, _) {
-        final allResources = widget.globalState.resources;
-
         final resources = widget.globalState.filteredResources;
 
         return Scaffold(
@@ -105,9 +98,10 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               slivers: [
                 _buildTopBar(),
                 _buildSearchAndFilters(),
-                _buildHeroSection(resources),
-                _buildAcademicCategories(allResources),
+                _buildAcademicCategories(resources),
                 if (resources.isNotEmpty) ...[
+                  _buildHeroSection(resources),
+
                   _buildTrendingSection(resources),
                   _buildTopRatedSection(resources),
                   _buildFreeSection(resources),
@@ -259,6 +253,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
               height: 37,
               child: ListView(
                 scrollDirection: Axis.horizontal,
+                dragStartBehavior: DragStartBehavior.start,
                 physics: const BouncingScrollPhysics(),
                 children: [
                   _buildFilterChip(
@@ -1184,6 +1179,7 @@ class _MarketplaceFeedScreenState extends State<MarketplaceFeedScreen> {
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   scrollDirection: Axis.horizontal,
+                  dragStartBehavior: DragStartBehavior.start,
                   physics: const BouncingScrollPhysics(),
                   itemCount: resources.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 11),
