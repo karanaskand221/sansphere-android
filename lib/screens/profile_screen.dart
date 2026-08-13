@@ -10,10 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
-import '../services/saved_resource_service.dart';
 import 'support_screen.dart';
 import 'auth/login_screen.dart';
-import 'resource_detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final GlobalState globalState;
@@ -36,11 +34,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
 
   final SanCoinService _sanCoinService = SanCoinService.instance;
-  final SavedResourceService _savedResourceService =
-      SavedResourceService.instance;
 
   bool _isEditing = false;
-  bool _showProfileDetails = false;
   bool _isSaving = false;
   Map<String, dynamic>? userData;
 
@@ -84,10 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return daysSince >= 30;
   }
 
-  Future<void> _saveProfileChanges(
-    String uid, {
-    bool payToEdit = false,
-  }) async {
+  Future<void> _saveProfileChanges(String uid, {bool payToEdit = false}) async {
     setState(() => _isSaving = true);
 
     try {
@@ -107,9 +99,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isEditing = false);
 
       final paidEdit = result['paidEdit'] == true;
-      final cost = result['cost'] is num
-          ? (result['cost'] as num).toInt()
-          : 0;
+      final cost = result['cost'] is num ? (result['cost'] as num).toInt() : 0;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -128,8 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       switch (e.code) {
         case 'failed-precondition':
-          message = e.message ??
-              "Profile editing is currently unavailable.";
+          message = e.message ?? "Profile editing is currently unavailable.";
           break;
         case 'unauthenticated':
           message = "Please log in again.";
@@ -142,10 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.redAccent,
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
       );
     } catch (e) {
       if (!mounted) return;
@@ -849,14 +835,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             title: const Row(
               children: [
-                Icon(
-                  Icons.lock_clock_rounded,
-                  color: Color(0xFF2563EB),
-                ),
+                Icon(Icons.lock_clock_rounded, color: Color(0xFF2563EB)),
                 SizedBox(width: 10),
-                Expanded(
-                  child: Text("Profile editing locked"),
-                ),
+                Expanded(child: Text("Profile editing locked")),
               ],
             ),
             content: Text(
@@ -888,18 +869,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       setState(() {
         _isEditing = true;
-        _showProfileDetails = true;
       });
 
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) {
-          return _buildEditProfileDialog(
-            dialogContext,
-            uid,
-            payToEdit: true,
-          );
+          return _buildEditProfileDialog(dialogContext, uid, payToEdit: true);
         },
       );
 
@@ -911,7 +887,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       setState(() {
         _isEditing = true;
-        _showProfileDetails = true;
       });
     }
 
@@ -919,12 +894,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
-        return _buildEditProfileDialog(
-          dialogContext,
-          uid,
-          payToEdit: false,
+        return _buildEditProfileDialog(dialogContext, uid, payToEdit: false);
+      },
+    );
+  }
+
+  void _showProfileDetailsDialog() {
+    final data = userData ?? {};
+
+    final bio = (data['bio'] ?? '').toString().trim();
+    final specification = (data['specification'] ?? '').toString().trim();
+    final college = (data['college'] ?? '').toString().trim();
+    final branch = (data['branch'] ?? '').toString().trim();
+    final year = (data['year'] ?? '').toString().trim();
+    final phone = (data['phoneNumber'] ?? '').toString().trim();
+    final showPhone = data['showPhoneNumber'] == true;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF8FAFC),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 16, 8),
+          contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.badge_outlined,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  "Profile Details",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              IconButton(
+                tooltip: "Close",
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildProfileDetailRow(
+                    Icons.info_outline_rounded,
+                    "Bio",
+                    bio.isEmpty ? "Not set" : bio,
+                  ),
+                  _buildProfileDetailRow(
+                    Icons.school_rounded,
+                    "Specification",
+                    specification.isEmpty ? "Not set" : specification,
+                  ),
+                  _buildProfileDetailRow(
+                    Icons.account_balance_rounded,
+                    "College",
+                    college.isEmpty ? "Not set" : college,
+                  ),
+                  _buildProfileDetailRow(
+                    Icons.category_rounded,
+                    "Branch",
+                    branch.isEmpty ? "Not set" : branch,
+                  ),
+                  _buildProfileDetailRow(
+                    Icons.calendar_month_rounded,
+                    "Year",
+                    year.isEmpty ? "Not set" : year,
+                  ),
+                  _buildProfileDetailRow(
+                    Icons.phone_rounded,
+                    "Phone",
+                    phone.isEmpty
+                        ? "Not set"
+                        : showPhone
+                        ? "$phone (visible to chat contacts)"
+                        : "Hidden from others",
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Close"),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildProfileDetailRow(IconData icon, String label, String value) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF2563EB), size: 21),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -952,17 +1069,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.edit_rounded,
-                  color: Color(0xFF2563EB),
-                ),
+                child: const Icon(Icons.edit_rounded, color: Color(0xFF2563EB)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  payToEdit
-                      ? "Edit Profile • 17 SanCoins"
-                      : "Edit Profile",
+                  payToEdit ? "Edit Profile • 17 SanCoins" : "Edit Profile",
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1121,10 +1233,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? null
                   : () async {
                       setDialogState(() {});
-                      await _saveProfileChanges(
-                        uid,
-                        payToEdit: payToEdit,
-                      );
+                      await _saveProfileChanges(uid, payToEdit: payToEdit);
 
                       if (!dialogContext.mounted) return;
 
@@ -1138,17 +1247,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check_rounded, size: 18),
               label: Text(
                 _isSaving
                     ? "Saving..."
                     : payToEdit
-                        ? "Pay 17 & Save"
-                        : "Save Changes",
+                    ? "Pay 17 & Save"
+                    : "Save Changes",
               ),
             ),
           ],
@@ -1195,7 +1302,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             elevation: 8,
             offset: const Offset(0, 48),
             onSelected: (value) {
-              if (value == 'edit') {
+              if (value == 'profile_details') {
+                _showProfileDetailsDialog();
+              } else if (value == 'edit') {
                 _showEditProfileDialog(uid);
               } else if (value == 'settings') {
                 Navigator.push(
@@ -1306,6 +1415,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'profile_details',
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_outlined, color: Color(0xFF2563EB)),
+                    SizedBox(width: 12),
+                    Text("Profile Details"),
+                  ],
+                ),
+              ),
               const PopupMenuItem<String>(
                 value: 'edit',
                 child: Row(
@@ -1523,68 +1642,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                 ),
-
-                if (_showProfileDetails) ...[
-                  const SizedBox(height: 28),
-
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Profile Details",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Bio: ${userData!['bio'] ?? ''}"),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Specification: "
-                        "${userData!['specification'] ?? ''}",
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "College: "
-                        "${userData!['college'] ?? ''}",
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Branch: "
-                        "${userData!['branch'] ?? ''}",
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Year: "
-                        "${userData!['year'] ?? ''}",
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _showPhoneNumber &&
-                                (userData!['phoneNumber'] ?? '')
-                                    .toString()
-                                    .isNotEmpty
-                            ? "Phone: "
-                                  "${userData!['phoneNumber']} "
-                                  "(visible to chat contacts)"
-                            : "Phone: "
-                                  "${(userData!['phoneNumber'] ?? '').toString().isEmpty ? 'not set' : 'hidden from others'}",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           );
