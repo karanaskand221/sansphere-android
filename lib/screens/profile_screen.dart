@@ -10,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
+import '../services/saved_resource_service.dart';
+import 'resource_detail_screen.dart';
 import 'support_screen.dart';
 import 'auth/login_screen.dart';
 
@@ -34,6 +36,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
 
   final SanCoinService _sanCoinService = SanCoinService.instance;
+  final SavedResourceService _savedResourceService =
+      SavedResourceService.instance;
 
   bool _isEditing = false;
   bool _isSaving = false;
@@ -617,6 +621,197 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildSavedResourcesSection() {
+    try {
+      return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _savedResourceService.streamSavedResources(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return _emptySectionMessage(
+              Icons.error_outline,
+              'Could not load your saved resources.',
+            );
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+
+          if (docs.isEmpty) {
+            return _emptySectionMessage(
+              Icons.bookmark_border_rounded,
+              'You have no saved resources yet.',
+            );
+          }
+
+          return Column(
+            children: docs.map((savedDoc) {
+              final data = savedDoc.data();
+              final resourceId = data['resourceId']?.toString() ?? '';
+
+              if (resourceId.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return FutureBuilder<DocumentSnapshot>(
+                future: _vaultFirestore
+                    .collection('academic_vault')
+                    .doc(resourceId)
+                    .get(),
+                builder: (context, resourceSnapshot) {
+                  if (resourceSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: const Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Loading saved resource...'),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!resourceSnapshot.hasData ||
+                      !resourceSnapshot.data!.exists) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'This saved resource is no longer available.',
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Remove',
+                            onPressed: () async {
+                              try {
+                                await _savedResourceService.removeSavedResource(
+                                  resourceId,
+                                );
+                              } catch (_) {}
+                            },
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final resourceData =
+                      resourceSnapshot.data!.data() as Map<String, dynamic>;
+
+                  resourceData['id'] = resourceSnapshot.data!.id;
+
+                  final resource = AcademicResource.fromMap(
+                    resourceData,
+                    resourceSnapshot.data!.id,
+                  );
+
+                  return _buildSavedResourceCard(resource);
+                },
+              );
+            }).toList(),
+          );
+        },
+      );
+    } catch (e) {
+      return _emptySectionMessage(
+        Icons.error_outline,
+        'Could not load your saved resources.',
+      );
+    }
+  }
+
+  Widget _buildSavedResourceCard(AcademicResource resource) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Stack(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ResourceDetailScreen(
+                      resource: resource,
+                      globalState: widget.globalState,
+                    ),
+                  ),
+                );
+              },
+              child: _buildResourceCard(resource: resource, purchased: false),
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              child: IconButton(
+                tooltip: 'Remove from Saved',
+                onPressed: () async {
+                  try {
+                    await _savedResourceService.removeSavedResource(
+                      resource.id,
+                    );
+                  } catch (e) {
+                    if (!mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Could not remove saved resource: $e'),
+                        backgroundColor: Colors.redAccent,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(
+                  Icons.bookmark_rounded,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUploadsSection(String uid) {
     return StreamBuilder<QuerySnapshot>(
       stream: _vaultFirestore
@@ -754,6 +949,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(color: Colors.grey, fontSize: 13),
               ),
               const SizedBox(height: 24),
+
+              _buildActivityOption(
+                icon: Icons.bookmark_rounded,
+                color: Colors.indigo,
+                title: "Saved Resources",
+                subtitle: "View resources you've bookmarked",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => Scaffold(
+                        backgroundColor: const Color(0xFFF8FAFC),
+                        appBar: AppBar(
+                          title: const Text("Saved Resources"),
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          elevation: 0,
+                        ),
+                        body: SingleChildScrollView(
+                          padding: const EdgeInsets.all(20),
+                          child: _buildSavedResourcesSection(),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               _buildActivityOption(
                 icon: Icons.cloud_upload_rounded,
