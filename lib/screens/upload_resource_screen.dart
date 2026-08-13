@@ -260,7 +260,45 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
 
       final String safeName = _safeFileName(file.name);
 
-      storagePath = 'academic_vault/${user.uid}/$customDocId/$safeName';
+      /*
+       * Academic Vault storage hierarchy:
+       *
+       * academic_vault/
+       *   {categoryId}/
+       *     {departmentId}/
+       *       {semesterId}/
+       *         {uploaderUid}/
+       *           {resourceId}/
+       *             {fileName}
+       *
+       * IDs are normalized so they are safe and stable as
+       * Firebase Storage path segments.
+       */
+      String storageId(String value) {
+        final normalized = value
+            .trim()
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+            .replaceAll(RegExp(r'^_+|_+$'), '');
+
+        return normalized.isEmpty ? 'other' : normalized;
+      }
+
+      final String categoryId = storageId(_categoryTypeValue);
+      final String departmentId = storageId(_departmentValue);
+
+      final int semesterNumber = _semesterValue ?? _selectedSemester;
+
+      final String semesterId = 'semester_$semesterNumber';
+
+      storagePath =
+          'academic_vault/'
+          '$categoryId/'
+          '$departmentId/'
+          '$semesterId/'
+          '${user.uid}/'
+          '$customDocId/'
+          '$safeName';
 
       setState(() {
         _uploadStatus = 'Uploading ${file.name}...';
@@ -344,7 +382,14 @@ class _UploadResourceScreenState extends State<UploadResourceScreen> {
         _uploadStatus = 'Creating resource record...';
       });
 
-      final downloadUrl = await storageRef.getDownloadURL();
+      /*
+       * Direct Storage reads are intentionally disabled.
+       *
+       * Purchased resources are downloaded through the
+       * getPurchasedFileUrl Cloud Function, which verifies
+       * permanent ownership and returns a short-lived signed URL.
+       */
+      const String downloadUrl = '';
 
       final tags = _tagsController.text
           .split(',')

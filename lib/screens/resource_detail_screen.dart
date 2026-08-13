@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -5,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
+import '../services/resource_rating_service.dart';
 
 class ResourceDetailScreen extends StatefulWidget {
   final AcademicResource resource;
@@ -22,16 +24,36 @@ class ResourceDetailScreen extends StatefulWidget {
 
 class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   final SanCoinService _sanCoinService = SanCoinService.instance;
+  final ResourceRatingService _ratingService = ResourceRatingService.instance;
+  final TextEditingController _reviewController = TextEditingController();
 
   bool _loadingPurchaseState = true;
   bool _purchased = false;
   bool _processingPurchase = false;
   bool _opening = false;
 
+  bool _loadingRating = true;
+  bool _submittingRating = false;
+  int _selectedRating = 0;
+  bool _hasRated = false;
+
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _ratingsStream;
+
   @override
   void initState() {
     super.initState();
+
+    if (_resourceId.isNotEmpty) {
+      _ratingsStream = _ratingService.streamRatings(_resourceId);
+    }
+
     _checkPurchase();
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
   }
 
   String get _resourceId {
@@ -68,6 +90,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         _purchased = purchased;
         _loadingPurchaseState = false;
       });
+
+      await _loadMyRating();
     } catch (e) {
       debugPrint('Purchase check failed: $e');
 
@@ -77,6 +101,352 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         _loadingPurchaseState = false;
       });
     }
+  }
+
+  Future<void> _loadMyRating() async {
+    if (!_purchased || _resourceId.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _loadingRating = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final existing = await _ratingService.getMyRating(_resourceId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _hasRated = existing != null;
+        _selectedRating = (existing?['rating'] as num?)?.toInt() ?? 0;
+        _reviewController.text = (existing?['review'] as String?)?.trim() ?? '';
+        _loadingRating = false;
+      });
+    } catch (e) {
+      debugPrint('Rating load failed: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _loadingRating = false;
+      });
+    }
+  }
+
+  Future<void> _submitRating() async {
+    if (_submittingRating) return;
+
+    if (!_purchased) {
+      _showError('Purchase this resource before rating it.');
+      return;
+    }
+
+    if (_selectedRating < 1 || _selectedRating > 5) {
+      _showError('Please select a rating from 1 to 5 stars.');
+      return;
+    }
+
+    setState(() {
+      _submittingRating = true;
+    });
+
+    try {
+      await _ratingService.submitRating(
+        resourceId: _resourceId,
+        rating: _selectedRating,
+        review: _reviewController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _hasRated = true;
+        _submittingRating = false;
+      });
+
+      _showSuccess(
+        _hasRated
+            ? 'Your rating has been saved successfully.'
+            : 'Rating submitted successfully.',
+      );
+    } catch (e) {
+      debugPrint('Rating submission failed: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _submittingRating = false;
+      });
+
+      _showError(e.toString().replaceFirst('Exception: ', ''));
+    }
+  }
+
+  Widget _buildPublicRatings() {
+    final stream = _ratingsStream;
+
+    if (stream == null) {
+      return const Text(
+        'No ratings yet.',
+        style: TextStyle(color: Color(0xFF64748B)),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          debugPrint('Ratings stream failed: ${snapshot.error}');
+
+          return const Text(
+            'Unable to load ratings right now.',
+            style: TextStyle(color: Color(0xFF64748B)),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+
+        if (docs.isEmpty) {
+          return const Text(
+            'No ratings or reviews yet. Be the first purchaser to review this resource.',
+            style: TextStyle(color: Color(0xFF64748B), height: 1.45),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...docs.map((doc) {
+              final data = doc.data();
+
+              final rating = (data['rating'] as num?)?.toInt() ?? 0;
+              final userName =
+                  (data['userName'] as String?)?.trim().isNotEmpty == true
+                  ? (data['userName'] as String).trim()
+                  : 'Anonymous';
+
+              final review = (data['review'] as String?)?.trim() ?? '';
+
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: const Color(0xFFEFF6FF),
+                          child: Text(
+                            userName.isNotEmpty
+                                ? userName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: Color(0xFF2563EB),
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            userName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(5, (index) {
+                            final star = index + 1;
+
+                            return Icon(
+                              star <= rating
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                              size: 18,
+                              color: const Color(0xFFF59E0B),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                    if (review.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        review,
+                        style: const TextStyle(
+                          color: Color(0xFF334155),
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildRatingSection() {
+    return _section(
+      title: 'Rating & Reviews',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPublicRatings(),
+          const SizedBox(height: 18),
+          if (_loadingRating)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (!_purchased)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lock_outline_rounded, color: Color(0xFF64748B)),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Purchase this resource to submit your own rating and review.',
+                      style: TextStyle(color: Color(0xFF475569), height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _hasRated
+                      ? 'Update your rating'
+                      : 'How would you rate this resource?',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    final star = index + 1;
+
+                    return IconButton(
+                      tooltip: '$star star${star == 1 ? '' : 's'}',
+                      onPressed: _submittingRating
+                          ? null
+                          : () {
+                              setState(() {
+                                _selectedRating = star;
+                              });
+                            },
+                      icon: Icon(
+                        star <= _selectedRating
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        size: 38,
+                        color: star <= _selectedRating
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFF94A3B8),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _reviewController,
+                  enabled: !_submittingRating,
+                  maxLines: 4,
+                  maxLength: 500,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'Write an optional review...',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _submittingRating ? null : _submitRating,
+                    icon: _submittingRating
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.star_rounded),
+                    label: Text(
+                      _submittingRating
+                          ? 'Saving...'
+                          : (_hasRated ? 'Update Rating' : 'Submit Rating'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _purchaseResource() async {
@@ -112,6 +482,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           _purchased = true;
         });
 
+        await _loadMyRating();
         _showSuccess('Free resource unlocked!');
       } catch (e) {
         debugPrint('Free resource unlock failed: $e');
@@ -557,6 +928,10 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                   }).toList(),
                 ),
               ),
+
+            const SizedBox(height: 16),
+
+            _buildRatingSection(),
 
             const SizedBox(height: 24),
 

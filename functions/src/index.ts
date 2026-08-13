@@ -447,6 +447,165 @@ export const purchaseResource = onCall(async (request) => {
 /**
  * Check permanent ownership.
  */
+
+/**
+ * Submit or update a rating/review for an academic resource.
+ *
+ * Purchase verification MUST happen on the server because purchases
+ * live in the separate "sansphere" Firestore database while ratings
+ * live in "sanvault".
+ */
+export const submitResourceRating = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const resourceId = String(
+    request.data?.resourceId ?? "",
+  ).trim();
+
+  const rating = Number(request.data?.rating);
+  const review = String(
+    request.data?.review ?? "",
+  ).trim();
+
+  if (!resourceId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "resourceId required.",
+    );
+  }
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Rating must be between 1 and 5.",
+    );
+  }
+
+  const purchaseRef = userDb
+    .collection("purchases")
+    .doc(`${uid}_${resourceId}`);
+
+  const resourceRef = vaultDb
+    .collection("academic_vault")
+    .doc(resourceId);
+
+  const ratingRef = resourceRef
+    .collection("ratings")
+    .doc(uid);
+
+  /*
+   * Purchase ownership is verified against the real purchase database.
+   */
+  const purchaseSnap = await purchaseRef.get();
+
+  if (
+    !purchaseSnap.exists ||
+    purchaseSnap.data()?.buyerId !== uid ||
+    purchaseSnap.data()?.resourceId !== resourceId ||
+    purchaseSnap.data()?.permanentlyOwned !== true
+  ) {
+    throw new HttpsError(
+      "permission-denied",
+      "Purchase this resource before rating it.",
+    );
+  }
+
+  let result: Record<string, unknown> = {};
+
+  await vaultDb.runTransaction(async (tx) => {
+    const resourceSnap = await tx.get(resourceRef);
+    const ratingSnap = await tx.get(ratingRef);
+
+    if (!resourceSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Resource not found.",
+      );
+    }
+
+    const resourceData = resourceSnap.data() ?? {};
+    const oldRating = Number(
+      ratingSnap.data()?.rating ?? 0,
+    );
+
+    const hasOldRating =
+      ratingSnap.exists &&
+      Number.isInteger(oldRating) &&
+      oldRating >= 1 &&
+      oldRating <= 5;
+
+    const currentRating = numberValue(
+      resourceData.rating,
+    );
+
+    const currentCount = Math.max(
+      0,
+      Math.trunc(numberValue(resourceData.ratingCount)),
+    );
+
+    let newCount = currentCount;
+    let newAverage: number;
+
+    if (hasOldRating) {
+      const total =
+        currentRating * currentCount -
+        oldRating +
+        rating;
+
+      newAverage = newCount > 0 ?
+        total / newCount :
+        rating;
+    } else {
+      newCount = currentCount + 1;
+
+      const total =
+        currentRating * currentCount +
+        rating;
+
+      newAverage = total / newCount;
+    }
+
+    const userRecord = (request.auth?.token ?? {}) as Record<string, unknown>;
+    const tokenName = userRecord["name"];
+
+    const displayName =
+      typeof tokenName === "string" && tokenName.trim().length > 0 ?
+        tokenName.trim() :
+        "Anonymous";
+
+    tx.set(
+      ratingRef,
+      {
+        userId: uid,
+        userName: displayName,
+        rating,
+        review,
+        createdAt:
+          ratingSnap.data()?.createdAt ??
+          FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+    );
+
+    tx.update(resourceRef, {
+      rating: Number(newAverage.toFixed(2)),
+      ratingCount: newCount,
+    });
+
+    result = {
+      success: true,
+      resourceId,
+      rating,
+      ratingCount: newCount,
+      averageRating: Number(newAverage.toFixed(2)),
+    };
+  });
+
+  return result;
+});
+
+
 export const checkPurchase = onCall(async (request) => {
   const uid = requireAuth(request);
 

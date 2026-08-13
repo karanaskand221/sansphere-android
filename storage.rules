@@ -14,10 +14,22 @@ service firebase.storage {
      * getPurchasedFileUrl(), which checks ownership
      * and returns a short-lived signed URL.
      */
-    match /academic_vault/{userId}/{resourceId}/{fileName} {
+    match /academic_vault/{categoryId}/{departmentId}/{semesterId}/{userId}/{resourceId}/{fileName} {
 
+      /*
+       * Direct reads are disabled.
+       *
+       * Purchased resources are accessed through the
+       * getPurchasedFileUrl Cloud Function, which verifies
+       * permanent ownership and generates a short-lived
+       * signed URL.
+       */
       allow read: if false;
 
+      /*
+       * Only the authenticated uploader may create/update
+       * their own resource file.
+       */
       allow create: if request.auth != null
         && request.auth.uid == userId
         && request.resource.size <= 25 * 1024 * 1024;
@@ -26,6 +38,11 @@ service firebase.storage {
         && request.auth.uid == userId
         && request.resource.size <= 25 * 1024 * 1024;
 
+      /*
+       * Only the uploader may directly delete their file.
+       * Application-level resource deletion is additionally
+       * protected by the delete Cloud Functions.
+       */
       allow delete: if request.auth != null
         && request.auth.uid == userId;
     }

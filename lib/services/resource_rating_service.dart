@@ -1,19 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 class ResourceRatingService {
   ResourceRatingService._();
 
-  static final ResourceRatingService instance = ResourceRatingService._();
+  static final ResourceRatingService instance =
+      ResourceRatingService._();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
+  final FirebaseFirestore _vaultFirestore =
+      FirebaseFirestore.instanceFor(
     app: Firebase.app(),
     databaseId: 'sanvault',
   );
 
-  CollectionReference<Map<String, dynamic>> _ratings(String resourceId) {
-    return _firestore
+  final FirebaseFirestore _userFirestore =
+      FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'sansphere',
+  );
+
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instance;
+
+  CollectionReference<Map<String, dynamic>> _ratings(
+    String resourceId,
+  ) {
+    return _vaultFirestore
         .collection('academic_vault')
         .doc(resourceId)
         .collection('ratings');
@@ -24,24 +38,27 @@ class ResourceRatingService {
 
     if (user == null) return false;
 
-    final purchase = await _firestore
+    final cleanResourceId = resourceId.trim();
+
+    if (cleanResourceId.isEmpty) return false;
+
+    final purchase = await _userFirestore
         .collection('purchases')
-        .doc('${user.uid}_$resourceId')
+        .doc('${user.uid}_$cleanResourceId')
         .get();
 
-    if (purchase.exists) return true;
+    if (!purchase.exists) return false;
 
-    final query = await _firestore
-        .collection('purchases')
-        .where('buyerId', isEqualTo: user.uid)
-        .where('resourceId', isEqualTo: resourceId)
-        .limit(1)
-        .get();
+    final data = purchase.data();
 
-    return query.docs.isNotEmpty;
+    return data?['buyerId'] == user.uid &&
+        data?['resourceId'] == cleanResourceId &&
+        data?['permanentlyOwned'] == true;
   }
 
-  Future<Map<String, dynamic>?> getMyRating(String resourceId) async {
+  Future<Map<String, dynamic>?> getMyRating(
+    String resourceId,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) return null;
@@ -50,13 +67,19 @@ class ResourceRatingService {
 
     if (!doc.exists) return null;
 
-    return {'id': doc.id, ...?doc.data()};
+    return {
+      'id': doc.id,
+      ...?doc.data(),
+    };
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> streamRatings(String resourceId) {
-    return _ratings(
-      resourceId,
-    ).orderBy('updatedAt', descending: true).limit(5).snapshots();
+  Stream<QuerySnapshot<Map<String, dynamic>>> streamRatings(
+    String resourceId,
+  ) {
+    return _ratings(resourceId)
+        .orderBy('updatedAt', descending: true)
+        .limit(5)
+        .snapshots();
   }
 
   Future<void> submitRating({
@@ -67,69 +90,35 @@ class ResourceRatingService {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      throw Exception('Please sign in to rate this resource.');
+      throw Exception(
+        'Please sign in to rate this resource.',
+      );
     }
 
     if (rating < 1 || rating > 5) {
-      throw Exception('Rating must be between 1 and 5.');
+      throw Exception(
+        'Rating must be between 1 and 5.',
+      );
     }
 
-    final purchased = await canRate(resourceId);
+    final cleanResourceId = resourceId.trim();
 
-    if (!purchased) {
-      throw Exception('Purchase this resource before rating it.');
+    if (cleanResourceId.isEmpty) {
+      throw Exception('Resource ID is required.');
     }
 
-    final resourceRef = _firestore.collection('academic_vault').doc(resourceId);
-
-    final ratingRef = _ratings(resourceId).doc(user.uid);
-
-    await _firestore.runTransaction((transaction) async {
-      final resourceSnapshot = await transaction.get(resourceRef);
-      final ratingSnapshot = await transaction.get(ratingRef);
-
-      if (!resourceSnapshot.exists) {
-        throw Exception('Resource not found.');
-      }
-
-      final resourceData = resourceSnapshot.data() ?? {};
-
-      final oldRating = (ratingSnapshot.data()?['rating'] as num?)?.toDouble();
-
-      final currentRating = (resourceData['rating'] as num?)?.toDouble() ?? 0.0;
-
-      final currentCount = (resourceData['ratingCount'] as num?)?.toInt() ?? 0;
-
-      double newAverage;
-      int newCount = currentCount;
-
-      if (oldRating != null) {
-        final total = (currentRating * currentCount) - oldRating + rating;
-
-        newAverage = newCount == 0 ? rating.toDouble() : total / newCount;
-      } else {
-        final total = (currentRating * currentCount) + rating;
-
-        newCount = currentCount + 1;
-        newAverage = total / newCount;
-      }
-
-      transaction.set(ratingRef, {
-        'userId': user.uid,
-        'userName': user.displayName?.trim().isNotEmpty == true
-            ? user.displayName!.trim()
-            : 'Anonymous',
+    try {
+      await _functions
+          .httpsCallable('submitResourceRating')
+          .call({
+        'resourceId': cleanResourceId,
         'rating': rating,
         'review': review.trim(),
-        'createdAt':
-            ratingSnapshot.data()?['createdAt'] ?? FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      transaction.update(resourceRef, {
-        'rating': double.parse(newAverage.toStringAsFixed(2)),
-        'ratingCount': newCount,
       });
-    });
+    } on FirebaseFunctionsException catch (e) {
+      throw Exception(
+        e.message ?? 'Could not submit your rating.',
+      );
+    }
   }
 }

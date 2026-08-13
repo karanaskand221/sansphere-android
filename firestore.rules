@@ -93,7 +93,10 @@ service cloud.firestore {
         && request.resource.data.uploaderId == request.auth.uid
         && request.resource.data.status == 'published';
 
-      allow update, delete: if request.auth != null
+      allow update: if request.auth != null
+        && resource.data.uploaderId == request.auth.uid;
+
+      allow delete: if request.auth != null
         && resource.data.uploaderId == request.auth.uid;
     }
 
