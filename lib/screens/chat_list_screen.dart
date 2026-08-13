@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 final _chatFirestore = FirebaseFirestore.instanceFor(
   app: Firebase.app(),
-  databaseId: 'sanvault',
+  databaseId: 'sansphere',
 );
 
 String _chatIdFor(String uidA, String uidB) {
@@ -21,42 +21,79 @@ Future<void> startChatWithUser(
   String? docId,
 }) async {
   final me = FirebaseAuth.instance.currentUser;
-  if (me == null || me.uid == peerUid) return;
 
-  final chatId = _chatIdFor(me.uid, peerUid);
-  final chatRef = _chatFirestore.collection('chats').doc(chatId);
-  final snap = await chatRef.get();
+  if (me == null) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please log in first.')));
+    }
+    return;
+  }
 
-  String myName = "Student";
+  if (me.uid == peerUid) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You cannot chat with yourself.')),
+      );
+    }
+    return;
+  }
+
   try {
-    final myDoc = await _chatFirestore.collection('users').doc(me.uid).get();
-    myName = myDoc.data()?['fullName'] ?? "Student";
-  } catch (_) {}
+    final chatId = _chatIdFor(me.uid, peerUid);
+    final chatRef = _chatFirestore.collection('chats').doc(chatId);
 
-  if (!snap.exists) {
+    String myName = 'Student';
+
+    try {
+      final myDoc = await _chatFirestore.collection('users').doc(me.uid).get();
+
+      final data = myDoc.data();
+
+      if (data != null) {
+        myName = data['fullName']?.toString() ?? 'Student';
+      }
+    } catch (e) {
+      debugPrint('Could not load current user profile: $e');
+    }
+
     await chatRef.set({
       'participants': [me.uid, peerUid],
       'participantNames': {me.uid: myName, peerUid: peerName},
       'lastMessage': docTitle != null
-          ? "Started a chat about \"$docTitle\""
-          : "Chat started",
+          ? 'Started a chat about "$docTitle"'
+          : 'Chat started',
       'lastMessageAt': FieldValue.serverTimestamp(),
       if (docTitle != null) 'docTitle': docTitle,
       if (docId != null) 'docId': docId,
-    });
-  }
+    }, SetOptions(merge: true));
 
-  if (!context.mounted) return;
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ChatConversationRoom(
-        chatId: chatId,
-        peerUid: peerUid,
-        peerName: peerName,
+    if (!context.mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatConversationRoom(
+          chatId: chatId,
+          peerUid: peerUid,
+          peerName: peerName,
+        ),
       ),
-    ),
-  );
+    );
+  } catch (e) {
+    debugPrint('START CHAT FAILED: $e');
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Could not start chat: $e'),
+        backgroundColor: Colors.redAccent,
+        duration: const Duration(seconds: 6),
+      ),
+    );
+  }
 }
 
 class ChatListScreen extends StatelessWidget {

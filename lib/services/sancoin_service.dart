@@ -28,6 +28,33 @@ class SanCoinService {
     return _toMap(result.data);
   }
 
+  Future<Map<String, dynamic>> updateProfile({
+    required String bio,
+    required String specification,
+    required String college,
+    required String branch,
+    required String year,
+    required String phoneNumber,
+    required bool showPhoneNumber,
+    bool payToEdit = false,
+  }) async {
+    final result = await _functions
+        .httpsCallable('updateProfile')
+        .call({
+      'bio': bio.trim(),
+      'specification': specification.trim(),
+      'college': college.trim(),
+      'branch': branch.trim(),
+      'year': year.trim(),
+      'phoneNumber': phoneNumber.trim(),
+      'showPhoneNumber': showPhoneNumber,
+      'payToEdit': payToEdit,
+    });
+
+    return _toMap(result.data);
+  }
+
+
   Future<Map<String, dynamic>> getWallet() async {
     final result = await _functions
         .httpsCallable('getSanCoinWallet')

@@ -7,6 +7,8 @@ import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
 import '../services/resource_rating_service.dart';
+import '../services/saved_resource_service.dart';
+import 'chat_list_screen.dart';
 
 class ResourceDetailScreen extends StatefulWidget {
   final AcademicResource resource;
@@ -25,10 +27,14 @@ class ResourceDetailScreen extends StatefulWidget {
 class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   final SanCoinService _sanCoinService = SanCoinService.instance;
   final ResourceRatingService _ratingService = ResourceRatingService.instance;
+  final SavedResourceService _savedResourceService =
+      SavedResourceService.instance;
   final TextEditingController _reviewController = TextEditingController();
 
   bool _loadingPurchaseState = true;
   bool _purchased = false;
+  bool _saved = false;
+  bool _savingResource = false;
   bool _processingPurchase = false;
   bool _opening = false;
 
@@ -41,6 +47,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
 
   @override
   void initState() {
+    _loadSavedState();
     super.initState();
 
     if (_resourceId.isNotEmpty) {
@@ -69,6 +76,71 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     if (!price.isFinite) return -1;
 
     return price.round();
+  }
+
+  Future<void> _loadSavedState() async {
+    try {
+      final saved = await _savedResourceService.isSaved(_resourceId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _saved = saved;
+      });
+    } catch (_) {
+      // Saving is optional UI state; do not block resource details.
+    }
+  }
+
+  Future<void> _toggleSavedResource() async {
+    if (_savingResource) return;
+
+    setState(() {
+      _savingResource = true;
+    });
+
+    try {
+      if (_saved) {
+        await _savedResourceService.removeSavedResource(_resourceId);
+
+        if (!mounted) return;
+
+        setState(() {
+          _saved = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Removed from Saved Resources.')),
+        );
+      } else {
+        await _savedResourceService.saveResource(_resourceId);
+
+        if (!mounted) return;
+
+        setState(() {
+          _saved = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to Saved Resources.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not update saved resource: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingResource = false;
+        });
+      }
+    }
   }
 
   Future<void> _checkPurchase() async {
@@ -804,6 +876,23 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: _saved ? 'Remove from Saved' : 'Save Resource',
+            onPressed: _savingResource ? null : _toggleSavedResource,
+            icon: _savingResource
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    _saved
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                  ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -936,6 +1025,10 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             const SizedBox(height: 24),
 
             _buildActionButton(),
+
+            const SizedBox(height: 12),
+
+            _buildMessageSellerButton(),
 
             const SizedBox(height: 30),
           ],
@@ -1143,6 +1236,37 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMessageSellerButton() {
+    final sellerUid = widget.resource.uploaderId.trim().isNotEmpty
+        ? widget.resource.uploaderId.trim()
+        : widget.resource.authorUid.trim();
+
+    final sellerName = widget.resource.uploaderName.trim().isNotEmpty
+        ? widget.resource.uploaderName.trim()
+        : widget.resource.authorName.trim();
+
+    if (sellerUid.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          startChatWithUser(
+            context,
+            peerUid: sellerUid,
+            peerName: sellerName.isNotEmpty ? sellerName : 'Seller',
+            docTitle: widget.resource.title,
+            docId: _resourceId,
+          );
+        },
+        icon: const Icon(Icons.chat_bubble_outline_rounded),
+        label: const Text('Message Seller'),
       ),
     );
   }

@@ -94,6 +94,121 @@ export const initializeSanCoins = onCall(async (request) => {
 
 
 /**
+ * Save the authenticated user's profile.
+ *
+ * Profile editing is free once the 30-day cooldown has expired.
+ * While the cooldown is active, the user may pay 17 SanCoins to
+ * make the edit immediately.
+ *
+ * The cooldown and SanCoin deduction are enforced server-side.
+ */
+export const updateProfile = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const bio = String(request.data?.bio ?? "").trim();
+  const specification = String(
+    request.data?.specification ?? "",
+  ).trim();
+  const college = String(request.data?.college ?? "").trim();
+  const branch = String(request.data?.branch ?? "").trim();
+  const year = String(request.data?.year ?? "").trim();
+  const phoneNumber = String(
+    request.data?.phoneNumber ?? "",
+  ).trim();
+  const showPhoneNumber =
+    request.data?.showPhoneNumber === true;
+  const payToEdit = request.data?.payToEdit === true;
+
+  const PROFILE_EDIT_COST = 17;
+  const COOLDOWN_DAYS = 30;
+
+  const userRef = userDb.collection("users").doc(uid);
+
+  let result: Record<string, unknown> = {};
+
+  await userDb.runTransaction(async (tx) => {
+    const userSnap = await tx.get(userRef);
+
+    if (!userSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "User profile not found.",
+      );
+    }
+
+    const user = userSnap.data() ?? {};
+    const lastProfileUpdate =
+      user.lastProfileUpdate;
+
+    let canEditFree = true;
+
+    if (lastProfileUpdate) {
+      const lastDate =
+        lastProfileUpdate.toDate();
+
+      const cooldownEnd = new Date(lastDate);
+      cooldownEnd.setDate(
+        cooldownEnd.getDate() + COOLDOWN_DAYS,
+      );
+
+      canEditFree =
+        new Date().getTime() >=
+        cooldownEnd.getTime();
+    }
+
+    const isPaidEdit =
+      !canEditFree && payToEdit;
+
+    if (!canEditFree && !payToEdit) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Profile editing is locked. 17 SanCoins are required to edit now.",
+      );
+    }
+
+    if (isPaidEdit) {
+      const coins = numberValue(user.sanCoins);
+
+      if (coins < PROFILE_EDIT_COST) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Insufficient SanCoins. Required ${PROFILE_EDIT_COST}, available ${coins}.`,
+        );
+      }
+
+      tx.update(userRef, {
+        sanCoins: coins - PROFILE_EDIT_COST,
+        spentCoins:
+          FieldValue.increment(PROFILE_EDIT_COST),
+      });
+    }
+
+    tx.update(userRef, {
+      bio,
+      specification,
+      college,
+      branch,
+      year,
+      phoneNumber,
+      showPhoneNumber,
+      lastProfileUpdate:
+        FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    result = {
+      success: true,
+      paidEdit: isPaidEdit,
+      cost: isPaidEdit ? PROFILE_EDIT_COST : 0,
+      cooldownDays: COOLDOWN_DAYS,
+    };
+  });
+
+  return result;
+});
+
+
+/**
  * Get current SanCoin wallet.
  */
 export const getSanCoinWallet = onCall(async (request) => {

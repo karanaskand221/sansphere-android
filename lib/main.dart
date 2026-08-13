@@ -82,7 +82,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       MarketplaceFeedScreen(globalState: _globalState),
       const ReelsScreen(),
       const ChatListScreen(),
-      const ProfileScreen(),
+      ProfileScreen(globalState: _globalState),
     ];
 
     return Scaffold(

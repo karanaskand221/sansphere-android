@@ -3,17 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
+import '../services/saved_resource_service.dart';
 import 'support_screen.dart';
 import 'auth/login_screen.dart';
+import 'resource_detail_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final GlobalState globalState;
+
+  const ProfileScreen({super.key, required this.globalState});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -31,8 +36,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   );
 
   final SanCoinService _sanCoinService = SanCoinService.instance;
+  final SavedResourceService _savedResourceService =
+      SavedResourceService.instance;
 
   bool _isEditing = false;
+  bool _showProfileDetails = false;
   bool _isSaving = false;
   Map<String, dynamic>? userData;
 
@@ -76,29 +84,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return daysSince >= 30;
   }
 
-  Future<void> _saveProfileChanges(String uid) async {
+  Future<void> _saveProfileChanges(
+    String uid, {
+    bool payToEdit = false,
+  }) async {
     setState(() => _isSaving = true);
 
     try {
-      await _firestore.collection('users').doc(uid).update({
-        'bio': _bioController.text.trim(),
-        'specification': _specController.text.trim(),
-        'college': _collegeController.text.trim(),
-        'branch': _branchController.text.trim(),
-        'year': _yearController.text.trim(),
-        'phoneNumber': _phoneController.text.trim(),
-        'showPhoneNumber': _showPhoneNumber,
-        'lastProfileUpdate': FieldValue.serverTimestamp(),
-      });
+      final result = await _sanCoinService.updateProfile(
+        bio: _bioController.text,
+        specification: _specController.text,
+        college: _collegeController.text,
+        branch: _branchController.text,
+        year: _yearController.text,
+        phoneNumber: _phoneController.text,
+        showPhoneNumber: _showPhoneNumber,
+        payToEdit: payToEdit,
+      );
 
       if (!mounted) return;
 
       setState(() => _isEditing = false);
 
+      final paidEdit = result['paidEdit'] == true;
+      final cost = result['cost'] is num
+          ? (result['cost'] as num).toInt()
+          : 0;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Profile updated!"),
+        SnackBar(
+          content: Text(
+            paidEdit
+                ? "Profile updated. $cost SanCoins used."
+                : "Profile updated!",
+          ),
           backgroundColor: Colors.green,
+        ),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+
+      String message;
+
+      switch (e.code) {
+        case 'failed-precondition':
+          message = e.message ??
+              "Profile editing is currently unavailable.";
+          break;
+        case 'unauthenticated':
+          message = "Please log in again.";
+          break;
+        case 'not-found':
+          message = "Profile not found.";
+          break;
+        default:
+          message = e.message ?? "Profile update failed.";
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.redAccent,
         ),
       );
     } catch (e) {
@@ -106,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Update failed: $e"),
+          content: Text("Profile update failed: $e"),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -783,6 +829,334 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _showEditProfileDialog(String uid) async {
+    final data = userData ?? {};
+    final canEditFree = _canEditNow(data);
+
+    if (!canEditFree) {
+      if (!mounted) return;
+
+      final coins = data['sanCoins'] is num
+          ? (data['sanCoins'] as num).toInt()
+          : 0;
+
+      final shouldPay = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Row(
+              children: [
+                Icon(
+                  Icons.lock_clock_rounded,
+                  color: Color(0xFF2563EB),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text("Profile editing locked"),
+                ),
+              ],
+            ),
+            content: Text(
+              "Your profile can normally be edited again after "
+              "the 30-day cooldown.\n\n"
+              "You can edit it now for 17 SanCoins.\n\n"
+              "Current balance: $coins SanCoins",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text("Cancel"),
+              ),
+              ElevatedButton.icon(
+                onPressed: coins < 17
+                    ? null
+                    : () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.stars_rounded, size: 18),
+                label: const Text("Edit for 17"),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldPay != true || !mounted) return;
+
+      _loadIntoControllers(data);
+
+      setState(() {
+        _isEditing = true;
+        _showProfileDetails = true;
+      });
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return _buildEditProfileDialog(
+            dialogContext,
+            uid,
+            payToEdit: true,
+          );
+        },
+      );
+
+      return;
+    }
+
+    _loadIntoControllers(data);
+
+    if (mounted) {
+      setState(() {
+        _isEditing = true;
+        _showProfileDetails = true;
+      });
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return _buildEditProfileDialog(
+          dialogContext,
+          uid,
+          payToEdit: false,
+        );
+      },
+    );
+  }
+
+  Widget _buildEditProfileDialog(
+    BuildContext dialogContext,
+    String uid, {
+    required bool payToEdit,
+  }) {
+    return StatefulBuilder(
+      builder: (context, setDialogState) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF8FAFC),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 16, 8),
+          contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  payToEdit
+                      ? "Edit Profile • 17 SanCoins"
+                      : "Edit Profile",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: "Close",
+                onPressed: _isSaving
+                    ? null
+                    : () {
+                        _isEditing = false;
+                        Navigator.pop(dialogContext);
+                      },
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _bioController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: "Bio",
+                      prefixIcon: const Icon(Icons.info_outline_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _specController,
+                    decoration: InputDecoration(
+                      labelText: "Specification",
+                      prefixIcon: const Icon(Icons.school_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _collegeController,
+                    decoration: InputDecoration(
+                      labelText: "College",
+                      prefixIcon: const Icon(Icons.account_balance_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _branchController,
+                    decoration: InputDecoration(
+                      labelText: "Branch",
+                      prefixIcon: const Icon(Icons.category_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _yearController,
+                    decoration: InputDecoration(
+                      labelText: "Year",
+                      prefixIcon: const Icon(Icons.calendar_month_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: "Phone Number",
+                      prefixIcon: const Icon(Icons.phone_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: SwitchListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                      ),
+                      title: const Text(
+                        "Show my phone number",
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        "Visible to people I chat with",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      value: _showPhoneNumber,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          _showPhoneNumber = value;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: _isSaving
+                  ? null
+                  : () {
+                      _isEditing = false;
+                      Navigator.pop(dialogContext);
+                    },
+              child: const Text("Cancel"),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: _isSaving
+                  ? null
+                  : () async {
+                      setDialogState(() {});
+                      await _saveProfileChanges(
+                        uid,
+                        payToEdit: payToEdit,
+                      );
+
+                      if (!dialogContext.mounted) return;
+
+                      if (!_isSaving && !_isEditing) {
+                        Navigator.pop(dialogContext);
+                      }
+
+                      setDialogState(() {});
+                    },
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.check_rounded, size: 18),
+              label: Text(
+                _isSaving
+                    ? "Saving..."
+                    : payToEdit
+                        ? "Pay 17 & Save"
+                        : "Save Changes",
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -799,7 +1173,172 @@ class _ProfileScreenState extends State<ProfileScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.logout), onPressed: _handleLogout),
+          PopupMenuButton<String>(
+            tooltip: "Profile menu",
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                ),
+              ),
+              child: const Icon(
+                Icons.more_horiz_rounded,
+                color: Color(0xFF2563EB),
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 8,
+            offset: const Offset(0, 48),
+            onSelected: (value) {
+              if (value == 'edit') {
+                _showEditProfileDialog(uid);
+              } else if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      backgroundColor: const Color(0xFFF8FAFC),
+                      appBar: AppBar(
+                        title: const Text("Settings"),
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                      ),
+                      body: ListView(
+                        padding: const EdgeInsets.all(20),
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Account Settings",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  "Manage your SanSphere account preferences.",
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ListTile(
+                            tileColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            leading: const Icon(
+                              Icons.person_outline_rounded,
+                              color: Color(0xFF2563EB),
+                            ),
+                            title: const Text(
+                              "Edit Profile",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: const Text(
+                              "Update your profile information",
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 15,
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showEditProfileDialog(uid);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          ListTile(
+                            tileColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            leading: const Icon(
+                              Icons.logout_rounded,
+                              color: Colors.redAccent,
+                            ),
+                            title: const Text(
+                              "Logout",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: const Text("Sign out of your account"),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 15,
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _handleLogout();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              } else if (value == 'logout') {
+                _handleLogout();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_rounded, color: Color(0xFF2563EB)),
+                    SizedBox(width: 12),
+                    Text("Edit Profile"),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_rounded, color: Colors.black87),
+                    SizedBox(width: 12),
+                    Text("Settings"),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, color: Colors.redAccent),
+                    SizedBox(width: 12),
+                    Text("Logout"),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -818,8 +1357,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (!_isEditing) {
             _loadIntoControllers(userData!);
           }
-
-          final canEdit = _canEditNow(userData!);
 
           final myEarnings = GlobalState.creatorEarnings[uid] ?? 0.0;
 
@@ -987,162 +1524,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
 
-                const SizedBox(height: 28),
+                if (_showProfileDetails) ...[
+                  const SizedBox(height: 28),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Profile Details",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (!_isEditing)
-                      TextButton.icon(
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: Text(
-                          canEdit ? "Edit" : "Locked (30-day cooldown)",
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Profile Details",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        onPressed: canEdit
-                            ? () => setState(() => _isEditing = true)
-                            : null,
                       ),
-                  ],
-                ),
+                    ],
+                  ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                _isEditing
-                    ? Column(
-                        children: [
-                          TextFormField(
-                            controller: _bioController,
-                            decoration: const InputDecoration(labelText: "Bio"),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _specController,
-                            decoration: const InputDecoration(
-                              labelText: "Specification",
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _collegeController,
-                            decoration: const InputDecoration(
-                              labelText: "College",
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _branchController,
-                            decoration: const InputDecoration(
-                              labelText: "Branch",
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _yearController,
-                            decoration: const InputDecoration(
-                              labelText: "Year",
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              labelText: "Phone Number",
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text(
-                              "Show my phone number to "
-                              "people I chat with",
-                              style: TextStyle(fontSize: 13),
-                            ),
-                            value: _showPhoneNumber,
-                            onChanged: (v) =>
-                                setState(() => _showPhoneNumber = v),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () =>
-                                      setState(() => _isEditing = false),
-                                  child: const Text("Cancel"),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _isSaving
-                                      ? null
-                                      : () => _saveProfileChanges(uid),
-                                  child: _isSaving
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text("Save"),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Bio: ${userData!['bio'] ?? ''}"),
-                          const SizedBox(height: 6),
-                          Text(
-                            "Specification: "
-                            "${userData!['specification'] ?? ''}",
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            "College: "
-                            "${userData!['college'] ?? ''}",
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            "Branch: "
-                            "${userData!['branch'] ?? ''}",
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            "Year: "
-                            "${userData!['year'] ?? ''}",
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _showPhoneNumber &&
-                                    (userData!['phoneNumber'] ?? '')
-                                        .toString()
-                                        .isNotEmpty
-                                ? "Phone: "
-                                      "${userData!['phoneNumber']} "
-                                      "(visible to chat contacts)"
-                                : "Phone: "
-                                      "${(userData!['phoneNumber'] ?? '').toString().isEmpty ? 'not set' : 'hidden from others'}",
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Bio: ${userData!['bio'] ?? ''}"),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Specification: "
+                        "${userData!['specification'] ?? ''}",
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "College: "
+                        "${userData!['college'] ?? ''}",
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Branch: "
+                        "${userData!['branch'] ?? ''}",
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        "Year: "
+                        "${userData!['year'] ?? ''}",
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _showPhoneNumber &&
+                                (userData!['phoneNumber'] ?? '')
+                                    .toString()
+                                    .isNotEmpty
+                            ? "Phone: "
+                                  "${userData!['phoneNumber']} "
+                                  "(visible to chat contacts)"
+                            : "Phone: "
+                                  "${(userData!['phoneNumber'] ?? '').toString().isEmpty ? 'not set' : 'hidden from others'}",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           );
