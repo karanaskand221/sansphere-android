@@ -173,7 +173,7 @@ class AcademicVaultFeedScreen extends StatefulWidget {
 class _AcademicVaultFeedScreenState extends State<AcademicVaultFeedScreen> {
   String _selectedCampusFilter = 'All';
   String _selectedCategoryFilter = 'All';
-  bool _isAuthenticating = true;
+  bool _isAuthenticating = false;
   bool _showSearchBar = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -193,25 +193,12 @@ class _AcademicVaultFeedScreenState extends State<AcademicVaultFeedScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeDevSession();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeDevSession() async {
-    try {
-      if (FirebaseAuth.instance.currentUser == null) {
-        await FirebaseAuth.instance.signInAnonymously();
-      }
-    } catch (e) {
-      debugPrint("Auth configuration warning: $e");
-    } finally {
-      if (mounted) setState(() => _isAuthenticating = false);
-    }
   }
 
   Color _getCategoryColor(String type) {

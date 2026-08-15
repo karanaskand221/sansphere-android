@@ -1,6 +1,6 @@
 {
-    "name": "sansphere_android",
-    "short_name": "sansphere_android",
+    "name": "SanSphere",
+    "short_name": "SanSphere",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#F8FAFC",
