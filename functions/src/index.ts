@@ -4,6 +4,7 @@ import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {initializeApp} from "firebase-admin/app";
+import {getAuth} from "firebase-admin/auth";
 
 initializeApp();
 
@@ -172,7 +173,8 @@ export const updateProfile = onCall(async (request) => {
       if (coins < PROFILE_EDIT_COST) {
         throw new HttpsError(
           "failed-precondition",
-          `Insufficient SanCoins. Required ${PROFILE_EDIT_COST}, available ${coins}.`,
+          `Insufficient SanCoins. Required ${PROFILE_EDIT_COST}, ` +
+            `available ${coins}.`,
         );
       }
 
@@ -1121,4 +1123,75 @@ export const deleteUploadedResource = onCall(async (request) => {
     resourceId,
     deletedPurchaseRecords: purchasesQuery.size,
   };
+});
+
+
+/**
+ * Check whether a phone number already exists in Firebase Authentication.
+ *
+ * IMPORTANT:
+ * This uses the Admin SDK and must remain server-side.
+ * The phone number must be E.164, for example +919876543210.
+ */
+export const checkPhoneAuthAccount = onCall(async (request) => {
+  const phoneNumber = String(
+    request.data?.phoneNumber ?? "",
+  ).trim();
+
+  if (!/^\+[1-9]\d{7,14}$/.test(phoneNumber)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "A valid E.164 phone number is required.",
+    );
+  }
+
+  try {
+    const user = await getAuth().getUserByPhoneNumber(phoneNumber);
+
+    console.log(
+      "checkPhoneAuthAccount RESULT",
+      JSON.stringify({
+        exists: true,
+        uid: user.uid,
+        phoneLast4: phoneNumber.slice(-4),
+      }),
+    );
+
+    return {
+      exists: true,
+    };
+  } catch (error: unknown) {
+    const code =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error ?
+        String(
+          (error as {code?: unknown}).code ?? "",
+        ) :
+        "";
+
+    if (code == "auth/user-not-found") {
+      console.log(
+        "checkPhoneAuthAccount RESULT",
+        JSON.stringify({
+          exists: false,
+          phoneLast4: phoneNumber.slice(-4),
+        }),
+      );
+
+      return {
+        exists: false,
+      };
+    }
+
+    console.error(
+      "checkPhoneAuthAccount failed:",
+      error,
+    );
+
+    throw new HttpsError(
+      "internal",
+      "Unable to check the phone account right now.",
+    );
+  }
 });

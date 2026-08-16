@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
@@ -239,10 +240,36 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // IMPORTANT:
-      // Do NOT query Firestore here.
-      // The user is not authenticated yet, so the Firestore
-      // security rules correctly reject that read.
+      /*
+       * PHONE LOGIN
+       *
+       * First check Firebase Authentication itself.
+       * Do NOT query Firestore here because the user is not
+       * authenticated yet.
+       *
+       * Existing Firebase phone account:
+       *   check → true → send OTP
+       *
+       * No Firebase phone account:
+       *   check → false → Account Not Found dialog
+       */
+      final exists = await _authService.phoneAuthAccountExists(phone);
+
+      if (!exists) {
+        if (!mounted) return;
+
+        setState(() {
+          _isLoading = false;
+        });
+
+        await _showAccountNotFoundDialog(
+          message:
+              'No SANSPHERE account exists with this phone number. '
+              'Would you like to create a new account?',
+        );
+
+        return;
+      }
 
       if (kIsWeb) {
         _webConfirmationResult = await _phoneAuthService.sendOtpWeb(phone);
@@ -259,6 +286,17 @@ class _LoginScreenState extends State<LoginScreen> {
       _showMessage(
         'OTP sent to +91 ${digits.substring(0, 5)} ${digits.substring(5)}.',
       );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _otpSent = false;
+        _nativeVerificationId = null;
+        _webConfirmationResult = null;
+        _isLoading = false;
+      });
+
+      _showError(e.message ?? 'Unable to check this phone number.');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
@@ -278,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _webConfirmationResult = null;
       });
 
-      _showError('Unable to send OTP. Please check your number and try again.');
+      _showError('Unable to check this phone number. Please try again.');
     } finally {
       if (mounted) {
         setState(() {

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -69,6 +70,36 @@ class AuthService {
         .get();
 
     return snapshot.docs.isNotEmpty;
+  }
+
+  Future<bool> phoneAuthAccountExists(String phoneNumber) async {
+    final normalizedPhone = phoneNumber.trim();
+
+    if (normalizedPhone.isEmpty) {
+      throw FirebaseException(
+        plugin: 'cloud_functions',
+        code: 'invalid-argument',
+        message: 'Phone number is required.',
+      );
+    }
+
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'checkPhoneAuthAccount',
+    );
+
+    final result = await callable.call({'phoneNumber': normalizedPhone});
+
+    final data = result.data;
+
+    if (data is Map) {
+      return data['exists'] == true;
+    }
+
+    throw FirebaseException(
+      plugin: 'cloud_functions',
+      code: 'invalid-response',
+      message: 'Invalid response from phone account check.',
+    );
   }
 
   Future<bool> accountExistsByUid(String uid) async {
