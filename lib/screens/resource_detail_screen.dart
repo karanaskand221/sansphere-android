@@ -9,6 +9,7 @@ import '../services/sancoin_service.dart';
 import '../services/resource_rating_service.dart';
 import '../services/saved_resource_service.dart';
 import 'chat_list_screen.dart';
+import 'public_profile_screen.dart';
 
 class ResourceDetailScreen extends StatefulWidget {
   final AcademicResource resource;
@@ -995,7 +996,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                   _detailRow('Semester', 'Semester ${resource.semester}'),
                   _detailRow('Department', resource.department),
                   _detailRow('College', resource.college),
-                  _detailRow('Uploaded by', resource.uploaderName),
+                  _buildUploaderProfileRow(),
                   _detailRow('Document ID', resource.customDocId),
                 ],
               ),
@@ -1236,6 +1237,84 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUploaderProfileRow() {
+    final uploaderUid = widget.resource.uploaderId.trim().isNotEmpty
+        ? widget.resource.uploaderId.trim()
+        : widget.resource.authorUid.trim();
+
+    final uploaderName = widget.resource.uploaderName.trim().isNotEmpty
+        ? widget.resource.uploaderName.trim()
+        : widget.resource.authorName.trim();
+
+    final displayName = uploaderName.isNotEmpty ? uploaderName : 'Anonymous';
+
+    if (uploaderUid.isEmpty) {
+      return _detailRow('Uploaded by', displayName);
+    }
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PublicProfileScreen(userId: uploaderUid),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                'Uploaded by',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: const Color(0xFFEFF6FF),
+                    child: Text(
+                      displayName[0].toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF2563EB),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF2563EB),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,9 @@
 /* eslint-disable require-jsdoc */
-import {onCall, HttpsError, CallableRequest} from "firebase-functions/v2/https";
+import {
+  onCall,
+  HttpsError,
+  CallableRequest,
+} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
@@ -558,6 +562,220 @@ export const purchaseResource = onCall(async (request) => {
   });
 
   return result;
+});
+
+
+/**
+ * Follow another SanSphere user.
+ *
+ * The relationship is stored in both users' subcollections:
+ *
+ * users/{targetUid}/followers/{followerUid}
+ * users/{followerUid}/following/{targetUid}
+ *
+ * Counts are updated atomically in the same transaction.
+ */
+export const followUser = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const targetUid = String(
+    request.data?.targetUid ?? "",
+  ).trim();
+
+  if (!targetUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Target user is required.",
+    );
+  }
+
+  if (targetUid === uid) {
+    throw new HttpsError(
+      "failed-precondition",
+      "You cannot follow yourself.",
+    );
+  }
+
+  const followerRef = userDb.collection("users").doc(uid);
+  const targetRef = userDb.collection("users").doc(targetUid);
+
+  const followingRef = followerRef
+    .collection("following")
+    .doc(targetUid);
+
+  const followerRelationRef = targetRef
+    .collection("followers")
+    .doc(uid);
+
+  let alreadyFollowing = false;
+
+  await userDb.runTransaction(async (tx) => {
+    const followerSnap = await tx.get(followerRef);
+    const targetSnap = await tx.get(targetRef);
+    const relationSnap = await tx.get(followingRef);
+
+    if (!followerSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Your profile was not found.",
+      );
+    }
+
+    if (!targetSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Target profile was not found.",
+      );
+    }
+
+    if (relationSnap.exists) {
+      alreadyFollowing = true;
+      return;
+    }
+
+    const now = FieldValue.serverTimestamp();
+
+    tx.set(followingRef, {
+      userId: targetUid,
+      createdAt: now,
+    });
+
+    tx.set(followerRelationRef, {
+      userId: uid,
+      createdAt: now,
+    });
+
+    tx.update(followerRef, {
+      followingCount: FieldValue.increment(1),
+      updatedAt: now,
+    });
+
+    tx.update(targetRef, {
+      followersCount: FieldValue.increment(1),
+      updatedAt: now,
+    });
+  });
+
+  return {
+    success: true,
+    alreadyFollowing,
+    following: true,
+  };
+});
+
+
+/**
+ * Unfollow another SanSphere user.
+ *
+ * Removes both sides of the relationship and updates counts atomically.
+ */
+export const unfollowUser = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const targetUid = String(
+    request.data?.targetUid ?? "",
+  ).trim();
+
+  if (!targetUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Target user is required.",
+    );
+  }
+
+  if (targetUid === uid) {
+    throw new HttpsError(
+      "failed-precondition",
+      "You cannot unfollow yourself.",
+    );
+  }
+
+  const followerRef = userDb.collection("users").doc(uid);
+  const targetRef = userDb.collection("users").doc(targetUid);
+
+  const followingRef = followerRef
+    .collection("following")
+    .doc(targetUid);
+
+  const followerRelationRef = targetRef
+    .collection("followers")
+    .doc(uid);
+
+  let alreadyFollowing = true;
+
+  await userDb.runTransaction(async (tx) => {
+    const followerSnap = await tx.get(followerRef);
+    const targetSnap = await tx.get(targetRef);
+    const relationSnap = await tx.get(followingRef);
+
+    if (!followerSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Your profile was not found.",
+      );
+    }
+
+    if (!targetSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Target profile was not found.",
+      );
+    }
+
+    if (!relationSnap.exists) {
+      alreadyFollowing = false;
+      return;
+    }
+
+    tx.delete(followingRef);
+    tx.delete(followerRelationRef);
+
+    tx.update(followerRef, {
+      followingCount: FieldValue.increment(-1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    tx.update(targetRef, {
+      followersCount: FieldValue.increment(-1),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+
+  return {
+    success: true,
+    alreadyFollowing,
+    following: false,
+  };
+});
+
+
+/**
+ * Check whether the authenticated user follows another user.
+ */
+export const checkFollowing = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const targetUid = String(
+    request.data?.targetUid ?? "",
+  ).trim();
+
+  if (!targetUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Target user is required.",
+    );
+  }
+
+  const relation = await userDb
+    .collection("users")
+    .doc(uid)
+    .collection("following")
+    .doc(targetUid)
+    .get();
+
+  return {
+    following: relation.exists,
+  };
 });
 
 
@@ -1195,3 +1413,683 @@ export const checkPhoneAuthAccount = onCall(async (request) => {
     );
   }
 });
+
+
+/**
+ * Update the authenticated user's privacy settings.
+ *
+ * Privacy changes are validated server-side so the client
+ * cannot write arbitrary privacy values.
+ */
+export const updatePrivacySettings = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const profileVisibility =
+    String(request.data?.profileVisibility ?? "").trim();
+
+  const uploadedResourcesVisibility =
+    String(
+      request.data?.uploadedResourcesVisibility ?? "",
+    ).trim();
+
+  const purchasedResourcesVisibility =
+    String(
+      request.data?.purchasedResourcesVisibility ?? "",
+    ).trim();
+
+  const showActivity =
+    request.data?.showActivity === true;
+
+  const allowMessages =
+    request.data?.allowMessages !== false;
+
+  const validProfileVisibility = [
+    "public",
+    "private",
+  ];
+
+  const validResourceVisibility = [
+    "public",
+    "followers",
+    "private",
+  ];
+
+  if (!validProfileVisibility.includes(profileVisibility)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Invalid profile visibility.",
+    );
+  }
+
+  if (
+    !validResourceVisibility.includes(
+      uploadedResourcesVisibility,
+    )
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Invalid uploaded resource visibility.",
+    );
+  }
+
+  if (
+    !validResourceVisibility.includes(
+      purchasedResourcesVisibility,
+    )
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Invalid purchased resource visibility.",
+    );
+  }
+
+  const userRef =
+    userDb.collection("users").doc(uid);
+
+  const userSnap = await userRef.get();
+
+  if (!userSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "User profile not found.",
+    );
+  }
+
+  await userRef.update({
+    profileVisibility,
+    uploadedResourcesVisibility,
+    purchasedResourcesVisibility,
+    showActivity,
+    allowMessages,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  return {
+    success: true,
+    profileVisibility,
+    uploadedResourcesVisibility,
+    purchasedResourcesVisibility,
+    showActivity,
+    allowMessages,
+  };
+});
+
+
+/**
+ * Return a privacy-safe public profile.
+ *
+ * The client never reads another user's complete users/{uid}
+ * document for public-profile rendering.
+ */
+export const getPublicProfile = onCall(async (request) => {
+  const requesterUid = requireAuth(request);
+
+  const targetUid = String(
+    request.data?.targetUid ?? "",
+  ).trim();
+
+  if (!targetUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Target user is required.",
+    );
+  }
+
+  const targetRef =
+    userDb.collection("users").doc(targetUid);
+
+  const targetSnap = await targetRef.get();
+
+  if (!targetSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Profile not found.",
+    );
+  }
+
+  const raw = targetSnap.data() ?? {};
+
+  const isOwnProfile =
+    requesterUid === targetUid;
+
+  /*
+   * Check the existing social-graph relationship.
+   *
+   * Existing followUser/unfollowUser functions store:
+   *
+   * users/{targetUid}/followers/{requesterUid}
+   */
+  let isFollowing = false;
+
+  if (!isOwnProfile) {
+    const followingRef = targetRef
+      .collection("followers")
+      .doc(requesterUid);
+
+    const followingSnap =
+      await followingRef.get();
+
+    isFollowing = followingSnap.exists;
+  }
+
+  const profileVisibility =
+    raw.profileVisibility === "private" ?
+      "private" :
+      "public";
+
+  const uploadedResourcesVisibility =
+    raw.uploadedResourcesVisibility === "followers" ?
+      "followers" :
+      raw.uploadedResourcesVisibility === "private" ?
+        "private" :
+        "public";
+
+  const purchasedResourcesVisibility =
+    raw.purchasedResourcesVisibility === "followers" ?
+      "followers" :
+      raw.purchasedResourcesVisibility === "private" ?
+        "private" :
+        "public";
+
+  const showActivity =
+    raw.showActivity !== false;
+
+  const allowMessages =
+    raw.allowMessages !== false;
+
+  /*
+   * The owner can always see their own profile/activity.
+   */
+  const canViewProfile =
+    isOwnProfile ||
+    profileVisibility === "public";
+
+  /*
+   * Resource visibility:
+   *
+   * owner      -> always allowed
+   * public     -> everyone
+   * followers  -> followers only
+   * private    -> owner only
+   */
+  const canViewUploadedResources =
+    isOwnProfile ||
+    (
+      canViewProfile &&
+      (
+        uploadedResourcesVisibility === "public" ||
+        (
+          uploadedResourcesVisibility === "followers" &&
+          isFollowing
+        )
+      )
+    );
+
+  const canViewPurchasedResources =
+    isOwnProfile ||
+    (
+      canViewProfile &&
+      (
+        purchasedResourcesVisibility === "public" ||
+        (
+          purchasedResourcesVisibility === "followers" &&
+          isFollowing
+        )
+      )
+    );
+
+  /*
+   * Activity is controlled separately.
+   */
+  const canViewActivity =
+    isOwnProfile ||
+    (
+      canViewProfile &&
+      showActivity
+    );
+
+  /*
+   * A private profile still exposes only safe identity
+   * information. We never return the complete user document.
+   */
+  const result: Record<string, unknown> = {
+    userId: targetUid,
+
+    fullName:
+      typeof raw.fullName === "string" ?
+        raw.fullName :
+        "Sansphere User",
+
+    username:
+      typeof raw.username === "string" ?
+        raw.username :
+        "",
+
+    profilePhotoUrl:
+      typeof raw.profilePhotoUrl === "string" ?
+        raw.profilePhotoUrl :
+        "",
+
+    followersCount:
+      numberValue(raw.followersCount),
+
+    followingCount:
+      numberValue(raw.followingCount),
+
+    reviewsCount:
+      numberValue(raw.reviewsCount),
+
+    profileVisibility,
+
+    isOwnProfile,
+    isFollowing,
+
+    canViewProfile,
+    canViewUploadedResources,
+    canViewPurchasedResources,
+    canViewActivity,
+
+    allowMessages:
+      isOwnProfile || (
+        canViewProfile &&
+        allowMessages
+      ),
+  };
+
+  /*
+   * Only expose academic/profile details when the profile
+   * itself is viewable.
+   */
+  if (canViewProfile) {
+    result.bio =
+      typeof raw.bio === "string" ?
+        raw.bio :
+        "";
+
+    result.college =
+      typeof raw.college === "string" ?
+        raw.college :
+        "";
+
+    result.branch =
+      typeof raw.branch === "string" ?
+        raw.branch :
+        "";
+
+    result.year =
+      typeof raw.year === "string" ?
+        raw.year :
+        "";
+  }
+
+  return result;
+});
+
+
+/**
+ * Return resources that the requester is allowed to see
+ * on another user's public profile.
+ *
+ * IMPORTANT:
+ * - No fileUrl is returned.
+ * - No storagePath is returned.
+ * - Actual file access remains protected by the existing
+ *   purchase/signed-URL functions.
+ */
+export const getVisibleProfileResources = onCall(
+  async (request) => {
+    const requesterUid = requireAuth(request);
+
+    const targetUid = String(
+      request.data?.targetUid ?? "",
+    ).trim();
+
+    const resourceType = String(
+      request.data?.resourceType ?? "",
+    ).trim();
+
+    if (!targetUid) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Target user is required.",
+      );
+    }
+
+    if (
+      resourceType !== "uploaded" &&
+      resourceType !== "purchased"
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Invalid resource type.",
+      );
+    }
+
+    const targetRef =
+      userDb.collection("users").doc(targetUid);
+
+    const targetSnap = await targetRef.get();
+
+    if (!targetSnap.exists) {
+      throw new HttpsError(
+        "not-found",
+        "Profile not found.",
+      );
+    }
+
+    const userData = targetSnap.data() ?? {};
+
+    const isOwnProfile =
+      requesterUid === targetUid;
+
+    let isFollowing = false;
+
+    if (!isOwnProfile) {
+      const followerSnap = await targetRef
+        .collection("followers")
+        .doc(requesterUid)
+        .get();
+
+      isFollowing = followerSnap.exists;
+    }
+
+    const profileVisibility =
+      userData.profileVisibility === "private" ?
+        "private" :
+        "public";
+
+    /*
+     * A private profile does not expose resource activity
+     * to other users.
+     */
+    if (
+      !isOwnProfile &&
+      profileVisibility === "private"
+    ) {
+      return {
+        success: true,
+        resourceType,
+        resources: [],
+        visible: false,
+        reason: "private_profile",
+      };
+    }
+
+    const visibilityField =
+      resourceType === "uploaded" ?
+        userData.uploadedResourcesVisibility :
+        userData.purchasedResourcesVisibility;
+
+    const visibility =
+      visibilityField === "followers" ?
+        "followers" :
+        visibilityField === "private" ?
+          "private" :
+          "public";
+
+    const allowed =
+      isOwnProfile ||
+      visibility === "public" ||
+      (
+        visibility === "followers" &&
+        isFollowing
+      );
+
+    if (!allowed) {
+      return {
+        success: true,
+        resourceType,
+        resources: [],
+        visible: false,
+        reason: "privacy_restricted",
+      };
+    }
+
+    /*
+     * --------------------------------------------------------
+     * UPLOADED RESOURCES
+     * --------------------------------------------------------
+     */
+    if (resourceType === "uploaded") {
+      const resourceSnapshot = await vaultDb
+        .collection("academic_vault")
+        .where("uploaderId", "==", targetUid)
+        .limit(50)
+        .get();
+
+      const resources = resourceSnapshot.docs.map(
+        (doc) => {
+          const data = doc.data();
+
+          return {
+            resourceId: doc.id,
+
+            title: String(
+              data.title ?? "Untitled Resource",
+            ),
+
+            description: String(
+              data.description ?? "",
+            ),
+
+            subject: String(
+              data.subject ?? "",
+            ),
+
+            college: String(
+              data.college ?? "",
+            ),
+
+            department: String(
+              data.department ?? "",
+            ),
+
+            type: String(
+              data.type ??
+                data.category ??
+                "Lecture Notes",
+            ),
+
+            price: numberValue(data.price),
+
+            uploaderId: String(
+              data.uploaderId ?? targetUid,
+            ),
+
+            uploaderName: String(
+              data.uploaderName ??
+                data.authorName ??
+                "",
+            ),
+
+            semester: numberValue(
+              data.semester,
+            ),
+
+            category: String(
+              data.category ?? "lectureNotes",
+            ),
+
+            fileName: String(
+              data.fileName ?? "",
+            ),
+
+            fileSizeMb: numberValue(
+              data.fileSizeMb ??
+                data.fileSize,
+            ),
+
+            rating: numberValue(
+              data.rating,
+            ),
+
+            ratingCount: numberValue(
+              data.ratingCount,
+            ),
+
+            tags: Array.isArray(data.tags) ?
+              data.tags.map((tag) =>
+                String(tag),
+              ) :
+              [],
+
+            /*
+             * Deliberately omitted:
+             *
+             * fileUrl
+             * storagePath
+             *
+             * Actual file access remains protected.
+             */
+          };
+        },
+      );
+
+      return {
+        success: true,
+        resourceType,
+        resources,
+        visible: true,
+      };
+    }
+
+    /*
+     * --------------------------------------------------------
+     * PURCHASED RESOURCES
+     * --------------------------------------------------------
+     *
+     * Purchases are stored in the main users database.
+     * The actual resource is stored in SanVault.
+     */
+    const purchasesSnapshot = await userDb
+      .collection("purchases")
+      .where("buyerId", "==", targetUid)
+      .limit(50)
+      .get();
+
+    const resources: Record<string, unknown>[] = [];
+
+    for (const purchaseDoc of purchasesSnapshot.docs) {
+      const purchase =
+        purchaseDoc.data();
+
+      if (
+        purchase.permanentlyOwned !== true
+      ) {
+        continue;
+      }
+
+      const resourceId = String(
+        purchase.resourceId ?? "",
+      ).trim();
+
+      if (!resourceId) {
+        continue;
+      }
+
+      const resourceSnap = await vaultDb
+        .collection("academic_vault")
+        .doc(resourceId)
+        .get();
+
+      if (!resourceSnap.exists) {
+        continue;
+      }
+
+      const data =
+        resourceSnap.data() ?? {};
+
+      resources.push({
+        resourceId: resourceSnap.id,
+
+        title: String(
+          data.title ?? "Untitled Resource",
+        ),
+
+        description: String(
+          data.description ?? "",
+        ),
+
+        subject: String(
+          data.subject ?? "",
+        ),
+
+        college: String(
+          data.college ?? "",
+        ),
+
+        department: String(
+          data.department ?? "",
+        ),
+
+        type: String(
+          data.type ??
+            data.category ??
+            "Lecture Notes",
+        ),
+
+        price: numberValue(
+          data.price,
+        ),
+
+        uploaderId: String(
+          data.uploaderId ?? "",
+        ),
+
+        uploaderName: String(
+          data.uploaderName ??
+            data.authorName ??
+            "",
+        ),
+
+        semester: numberValue(
+          data.semester,
+        ),
+
+        category: String(
+          data.category ?? "lectureNotes",
+        ),
+
+        fileName: String(
+          data.fileName ?? "",
+        ),
+
+        fileSizeMb: numberValue(
+          data.fileSizeMb ??
+            data.fileSize,
+        ),
+
+        rating: numberValue(
+          data.rating,
+        ),
+
+        ratingCount: numberValue(
+          data.ratingCount,
+        ),
+
+        tags: Array.isArray(data.tags) ?
+          data.tags.map((tag) =>
+            String(tag),
+          ) :
+          [],
+
+        purchasedAt:
+          purchase.purchasedAt ??
+          null,
+
+        /*
+         * Deliberately omitted:
+         * fileUrl
+         * storagePath
+         */
+      });
+    }
+
+    return {
+      success: true,
+      resourceType,
+      resources,
+      visible: true,
+    };
+  },
+);

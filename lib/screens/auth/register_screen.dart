@@ -521,6 +521,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       'referralRewardClaimed': false,
       'phoneNumber': phoneNumber,
       'showPhoneNumber': false,
+      'profileVisibility': 'public',
+      'uploadedResourcesVisibility': 'public',
+      'purchasedResourcesVisibility': 'private',
+      'showActivity': true,
+      'allowMessages': true,
+      'profilePhotoUrl': '',
+      'username': 'user_${user.uid.substring(0, 8).toLowerCase()}',
+      'followersCount': 0,
+      'followingCount': 0,
+      'reviewsCount': 0,
     });
   }
 

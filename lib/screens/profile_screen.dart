@@ -14,6 +14,7 @@ import '../services/saved_resource_service.dart';
 import 'resource_detail_screen.dart';
 import 'support_screen.dart';
 import 'auth/login_screen.dart';
+import 'privacy_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final GlobalState globalState;
@@ -1502,183 +1503,124 @@ class _ProfileScreenState extends State<ProfileScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          PopupMenuButton<String>(
-            tooltip: "Profile menu",
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2563EB).withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.15),
-                ),
-              ),
-              child: const Icon(
-                Icons.more_horiz_rounded,
-                color: Color(0xFF2563EB),
-              ),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 8,
-            offset: const Offset(0, 48),
-            onSelected: (value) {
-              if (value == 'profile_details') {
-                _showProfileDetailsDialog();
-              } else if (value == 'edit') {
-                _showEditProfileDialog(uid);
-              } else if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      backgroundColor: const Color(0xFFF8FAFC),
-                      appBar: AppBar(
-                        title: const Text("Settings"),
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        elevation: 0,
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_rounded),
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (sheetContext) {
+                  return SafeArea(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
                       ),
-                      body: ListView(
-                        padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
+                          const SizedBox(height: 10),
                           Container(
-                            padding: const EdgeInsets.all(18),
+                            width: 42,
+                            height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Account Settings",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  "Manage your SanSphere account preferences.",
-                                  style: TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
+                              color: Color(0xFFE2E8F0),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(10),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 18),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Settings',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                           ListTile(
-                            tileColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            leading: const Icon(
-                              Icons.person_outline_rounded,
-                              color: Color(0xFF2563EB),
-                            ),
-                            title: const Text(
-                              "Edit Profile",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: const Text(
-                              "Update your profile information",
-                            ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 15,
-                            ),
+                            leading: const Icon(Icons.edit_rounded),
+                            title: const Text('Edit Profile'),
                             onTap: () {
-                              Navigator.pop(context);
+                              Navigator.pop(sheetContext);
                               _showEditProfileDialog(uid);
                             },
                           ),
-                          const SizedBox(height: 12),
+
                           ListTile(
-                            tileColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            leading: const Icon(Icons.lock_outline_rounded),
+                            title: const Text('Privacy'),
+                            subtitle: const Text(
+                              'Control your profile and activity visibility',
                             ),
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const PrivacySettingsScreen(),
+                                ),
+                              );
+                            },
+                          ),
+
+                          ListTile(
+                            leading: const Icon(Icons.card_giftcard_rounded),
+                            title: const Text('Refer and Earn'),
+                            subtitle: Text(
+                              'Code: ${userData?['referralCode'] ?? '...'}',
+                            ),
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              _shareReferralCode();
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.support_agent_rounded),
+                            title: const Text('Contact Support'),
+                            onTap: () {
+                              Navigator.pop(sheetContext);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SupportScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          ListTile(
                             leading: const Icon(
                               Icons.logout_rounded,
                               color: Colors.redAccent,
                             ),
                             title: const Text(
-                              "Logout",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: const Text("Sign out of your account"),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 15,
+                              'Logout',
+                              style: TextStyle(color: Colors.redAccent),
                             ),
                             onTap: () {
-                              Navigator.pop(context);
+                              Navigator.pop(sheetContext);
                               _handleLogout();
                             },
                           ),
+                          const SizedBox(height: 12),
                         ],
                       ),
                     ),
-                  ),
-                );
-              } else if (value == 'logout') {
-                _handleLogout();
-              }
+                  );
+                },
+              );
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'profile_details',
-                child: Row(
-                  children: [
-                    Icon(Icons.badge_outlined, color: Color(0xFF2563EB)),
-                    SizedBox(width: 12),
-                    Text("Profile Details"),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_rounded, color: Color(0xFF2563EB)),
-                    SizedBox(width: 12),
-                    Text("Edit Profile"),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings_rounded, color: Colors.black87),
-                    SizedBox(width: 12),
-                    Text("Settings"),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout_rounded, color: Colors.redAccent),
-                    SizedBox(width: 12),
-                    Text("Logout"),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
