@@ -16,6 +16,7 @@ import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 import 'widgets/ambient_background.dart';
+import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,13 +40,60 @@ class SanSphereApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  late final Future<bool> _startupAuthCheck;
+
+  @override
+  void initState() {
+    super.initState();
+    _startupAuthCheck = _checkStartupAuthentication();
+  }
+
+  Future<bool> _checkStartupAuthentication() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return false;
+    }
+
+    try {
+      final exists = await AuthService.instance.accountExistsByUid(user.uid);
+
+      if (!exists) {
+        // A Firebase Auth user without a SANSPHERE profile
+        // is not considered a logged-in SANSPHERE user.
+        await FirebaseAuth.instance.signOut();
+        return false;
+      }
+
+      return true;
+    } on FirebaseException catch (e) {
+      debugPrint(
+        'AuthGate Firestore check failed: '
+        '${e.code}: ${e.message}',
+      );
+
+      await FirebaseAuth.instance.signOut();
+      return false;
+    } catch (e) {
+      debugPrint('AuthGate startup check failed: $e');
+
+      await FirebaseAuth.instance.signOut();
+      return false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return FutureBuilder<bool>(
+      future: _startupAuthCheck,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -54,9 +102,11 @@ class AuthGate extends StatelessWidget {
             ),
           );
         }
-        if (snapshot.hasData) {
+
+        if (snapshot.data == true) {
           return const MainNavigationScreen(isGuestMode: false);
         }
+
         return const LoginScreen();
       },
     );
