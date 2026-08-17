@@ -114,6 +114,20 @@ service cloud.firestore {
     }
 
 
+
+    /*
+     * SANCOIN TRANSACTION LEDGER
+     *
+     * Clients may read only their own ledger entries.
+     * All ledger writes are server-only.
+     */
+    match /sancoin_transactions/{transactionId} {
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid;
+
+      allow write: if false;
+    }
+
     /*
      * PURCHASES
      */

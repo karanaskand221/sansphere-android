@@ -21,6 +21,7 @@ import 'resource_detail_screen.dart';
 import 'support_screen.dart';
 import 'auth/login_screen.dart';
 import 'privacy_settings_screen.dart';
+import 'wallet_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final GlobalState globalState;
@@ -511,34 +512,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
-    );
-  }
-
-  Widget _buildWalletCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
-      ),
     );
   }
 
@@ -2067,8 +2040,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _loadIntoControllers(userData!);
           }
 
-          final myEarnings = GlobalState.creatorEarnings[uid] ?? 0.0;
-
           final fullName = (userData!['fullName'] ?? '').toString().trim();
           final username = (userData!['username'] ?? '').toString().trim();
           final bio = (userData!['bio'] ?? '').toString().trim();
@@ -2310,48 +2281,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 28),
 
-                /* WALLET
-             */
-                const Text(
-                  "SanCoins & Wallet",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                const SizedBox(height: 28),
 
-                const SizedBox(height: 12),
-
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.5,
-                  children: [
-                    _buildWalletCard(
-                      "Available Cash",
-                      "₹${GlobalState.currentUserWallet.toStringAsFixed(2)}",
-                      Icons.account_balance_wallet,
-                      Colors.teal,
+                // ==========================================================
+                // WALLET
+                // Everything related to SanCoins/payments lives inside
+                // the dedicated Wallet screen.
+                // ==========================================================
+                ListTile(
+                  tileColor: const Color(0xFF2563EB).withValues(alpha: 0.10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    _buildWalletCard(
-                      "SanCoins",
-                      "${userData?['sanCoins'] ?? 0}",
-                      Icons.stars_rounded,
-                      Colors.amber,
+                    child: const Icon(
+                      Icons.account_balance_wallet_rounded,
+                      color: Color(0xFF60A5FA),
                     ),
-                    _buildWalletCard(
-                      "My Document Sales",
-                      "₹${myEarnings.toStringAsFixed(2)}",
-                      Icons.monetization_on,
-                      Colors.purple,
-                    ),
-                    _buildWalletCard(
-                      "Platform Processing Pool",
-                      "₹${GlobalState.platformProcessingPool.toStringAsFixed(2)}",
-                      Icons.admin_panel_settings,
-                      Colors.blueGrey,
-                    ),
-                  ],
+                  ),
+                  title: const Text(
+                    "Wallet",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
+                  subtitle: Text(
+                    "${userData?['sanCoins'] ?? 0} SanCoins • Payments & transactions",
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 15,
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const WalletScreen()),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 20),

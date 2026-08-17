@@ -28,10 +28,7 @@ function requireAuth(request: CallableRequest): string {
   const uid = request.auth?.uid;
 
   if (!uid) {
-    throw new HttpsError(
-      "unauthenticated",
-      "You must be logged in.",
-    );
+    throw new HttpsError("unauthenticated", "You must be logged in.");
   }
 
   return uid;
@@ -40,6 +37,49 @@ function requireAuth(request: CallableRequest): string {
 function numberValue(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Create an immutable SanCoin ledger entry.
+ *
+ * This helper must only be called inside an existing Firestore
+ * transaction so the balance mutation and ledger entry commit
+ * atomically.
+ *
+ * @param {FirebaseFirestore.Transaction} tx Firestore transaction
+ *   used for the atomic write.
+ * @param {string} transactionId Unique immutable ledger transaction ID.
+ * @param {string} uid User ID that owns the ledger entry.
+ * @param {string} type Transaction type.
+ * @param {number} amount Signed SanCoin amount.
+ * @param {number} balanceAfter User balance after the transaction.
+ * @param {string} description Human-readable transaction description.
+ * @param {string} referenceId Related resource, user, or operation ID.
+ */
+function createSanCoinLedgerEntry(
+  tx: FirebaseFirestore.Transaction,
+  transactionId: string,
+  uid: string,
+  type: string,
+  amount: number,
+  balanceAfter: number,
+  description: string,
+  referenceId: string,
+): void {
+  const ledgerRef = userDb
+    .collection("sancoin_transactions")
+    .doc(transactionId);
+
+  tx.create(ledgerRef, {
+    uid,
+    type,
+    amount,
+    balanceAfter,
+    description,
+    referenceId,
+    currency: "SanCoins",
+    createdAt: FieldValue.serverTimestamp(),
+  });
 }
 
 /**
@@ -68,6 +108,37 @@ export const initializeSanCoins = onCall(async (request) => {
 
     if (data.walletInitialized === true) {
       coins = numberValue(data.sanCoins);
+
+      // Existing users may have received SanCoins before the
+      // immutable ledger was introduced. Preserve their balance
+      // and create exactly one opening-balance record.
+      const ledgerCollection = userDb.collection("sancoin_transactions");
+
+      const initialLedgerRef = ledgerCollection.doc(`initial_${uid}`);
+      const openingLedgerRef = ledgerCollection.doc(`opening_${uid}`);
+
+      const initialLedgerSnap = await tx.get(initialLedgerRef);
+      const openingLedgerSnap = await tx.get(openingLedgerRef);
+
+      // A new user may already have an initial_grant created by
+      // createUserWallet(). In that case, do NOT create an
+      // opening_balance entry as well.
+      //
+      // An opening_balance entry is only required for an existing
+      // wallet whose balance predates the ledger.
+      if (!initialLedgerSnap.exists && !openingLedgerSnap.exists) {
+        tx.create(openingLedgerRef, {
+          uid,
+          type: "opening_balance",
+          amount: coins,
+          balanceAfter: coins,
+          description: "Opening SanCoin balance migrated to ledger",
+          referenceId: uid,
+          currency: "SanCoins",
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+
       return;
     }
 
@@ -83,11 +154,21 @@ export const initializeSanCoins = onCall(async (request) => {
         adsWatched: numberValue(data.adsWatched),
         referralCount: numberValue(data.referralCount),
         walletInitialized: true,
-        referralRewardClaimed:
-          data.referralRewardClaimed === true,
+        referralRewardClaimed: data.referralRewardClaimed === true,
         updatedAt: FieldValue.serverTimestamp(),
       },
       {merge: true},
+    );
+
+    createSanCoinLedgerEntry(
+      tx,
+      `initial_${uid}`,
+      uid,
+      "initial_grant",
+      NEW_USER_COINS,
+      coins,
+      "New user SanCoin grant",
+      uid,
     );
   });
 
@@ -96,7 +177,6 @@ export const initializeSanCoins = onCall(async (request) => {
     sanCoins: coins,
   };
 });
-
 
 /**
  * Save the authenticated user's profile.
@@ -110,22 +190,17 @@ export const initializeSanCoins = onCall(async (request) => {
 export const updateProfile = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const username = String(
-    request.data?.username ?? "",
-  ).trim().toLowerCase();
+  const username = String(request.data?.username ?? "")
+    .trim()
+    .toLowerCase();
 
   const bio = String(request.data?.bio ?? "").trim();
-  const specification = String(
-    request.data?.specification ?? "",
-  ).trim();
+  const specification = String(request.data?.specification ?? "").trim();
   const college = String(request.data?.college ?? "").trim();
   const branch = String(request.data?.branch ?? "").trim();
   const year = String(request.data?.year ?? "").trim();
-  const phoneNumber = String(
-    request.data?.phoneNumber ?? "",
-  ).trim();
-  const showPhoneNumber =
-    request.data?.showPhoneNumber === true;
+  const phoneNumber = String(request.data?.phoneNumber ?? "").trim();
+  const showPhoneNumber = request.data?.showPhoneNumber === true;
   const payToEdit = request.data?.payToEdit === true;
 
   const PROFILE_EDIT_COST = 17;
@@ -143,7 +218,7 @@ export const updateProfile = onCall(async (request) => {
     throw new HttpsError(
       "invalid-argument",
       "Username must be 3-30 characters and contain only " +
-      "letters, numbers, and underscores.",
+        "letters, numbers, and underscores.",
     );
   }
 
@@ -156,24 +231,19 @@ export const updateProfile = onCall(async (request) => {
     const userSnap = await tx.get(userRef);
 
     if (!userSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "User profile not found.",
-      );
+      throw new HttpsError("not-found", "User profile not found.");
     }
 
     const user = userSnap.data() ?? {};
 
-    const currentUsername = String(
-      user.username ?? "",
-    ).trim().toLowerCase();
+    const currentUsername = String(user.username ?? "")
+      .trim()
+      .toLowerCase();
 
     const usernameSnap = await tx.get(usernameRef);
 
     if (usernameSnap.exists) {
-      const usernameOwner = String(
-        usernameSnap.data()?.uid ?? "",
-      );
+      const usernameOwner = String(usernameSnap.data()?.uid ?? "");
 
       if (usernameOwner !== uid) {
         throw new HttpsError(
@@ -184,34 +254,23 @@ export const updateProfile = onCall(async (request) => {
     }
 
     const legacyUsernameQuery = await tx.get(
-      userDb
-        .collection("users")
-        .where("username", "==", username)
-        .limit(2),
+      userDb.collection("users").where("username", "==", username).limit(2),
     );
 
-    const legacyUsernameOwners =
-      legacyUsernameQuery.docs
-        .map((doc) => doc.id)
-        .filter((ownerUid) => ownerUid !== uid);
+    const legacyUsernameOwners = legacyUsernameQuery.docs
+      .map((doc) => doc.id)
+      .filter((ownerUid) => ownerUid !== uid);
 
     if (legacyUsernameOwners.length > 0) {
-      throw new HttpsError(
-        "already-exists",
-        "That username is already taken.",
-      );
+      throw new HttpsError("already-exists", "That username is already taken.");
     }
 
-    if (
-      currentUsername.length > 0 &&
-      currentUsername !== username
-    ) {
+    if (currentUsername.length > 0 && currentUsername !== username) {
       const oldUsernameRef = userDb
         .collection("usernames")
         .doc(currentUsername);
 
-      const oldUsernameSnap =
-        await tx.get(oldUsernameRef);
+      const oldUsernameSnap = await tx.get(oldUsernameRef);
 
       if (
         oldUsernameSnap.exists &&
@@ -224,39 +283,30 @@ export const updateProfile = onCall(async (request) => {
     tx.set(
       usernameRef,
       {
-        "uid": uid,
-        "username": username,
-        "createdAt":
-          usernameSnap.exists ?
-            usernameSnap.data()?.createdAt ??
-                  FieldValue.serverTimestamp() :
-            FieldValue.serverTimestamp(),
-        "updatedAt": FieldValue.serverTimestamp(),
+        uid: uid,
+        username: username,
+        createdAt: usernameSnap.exists ?
+          (usernameSnap.data()?.createdAt ?? FieldValue.serverTimestamp()) :
+          FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       {merge: true},
     );
 
-    const lastProfileUpdate =
-      user.lastProfileUpdate;
+    const lastProfileUpdate = user.lastProfileUpdate;
 
     let canEditFree = true;
 
     if (lastProfileUpdate) {
-      const lastDate =
-        lastProfileUpdate.toDate();
+      const lastDate = lastProfileUpdate.toDate();
 
       const cooldownEnd = new Date(lastDate);
-      cooldownEnd.setDate(
-        cooldownEnd.getDate() + COOLDOWN_DAYS,
-      );
+      cooldownEnd.setDate(cooldownEnd.getDate() + COOLDOWN_DAYS);
 
-      canEditFree =
-        new Date().getTime() >=
-        cooldownEnd.getTime();
+      canEditFree = new Date().getTime() >= cooldownEnd.getTime();
     }
 
-    const isPaidEdit =
-      !canEditFree && payToEdit;
+    const isPaidEdit = !canEditFree && payToEdit;
 
     if (!canEditFree && !payToEdit) {
       throw new HttpsError(
@@ -278,8 +328,7 @@ export const updateProfile = onCall(async (request) => {
 
       tx.update(userRef, {
         sanCoins: coins - PROFILE_EDIT_COST,
-        spentCoins:
-          FieldValue.increment(PROFILE_EDIT_COST),
+        spentCoins: FieldValue.increment(PROFILE_EDIT_COST),
       });
     }
 
@@ -292,8 +341,7 @@ export const updateProfile = onCall(async (request) => {
       year,
       phoneNumber,
       showPhoneNumber,
-      lastProfileUpdate:
-        FieldValue.serverTimestamp(),
+      lastProfileUpdate: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -308,7 +356,6 @@ export const updateProfile = onCall(async (request) => {
   return result;
 });
 
-
 /**
  * Check whether a username is available.
  *
@@ -318,9 +365,9 @@ export const updateProfile = onCall(async (request) => {
 export const checkUsernameAvailability = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const username = String(
-    request.data?.username ?? "",
-  ).trim().toLowerCase();
+  const username = String(request.data?.username ?? "")
+    .trim()
+    .toLowerCase();
 
   const USERNAME_MIN_LENGTH = 3;
   const USERNAME_MAX_LENGTH = 30;
@@ -347,9 +394,9 @@ export const checkUsernameAvailability = onCall(async (request) => {
     usernameRef.get(),
   ]);
 
-  const currentUsername = String(
-    userSnap.data()?.username ?? "",
-  ).trim().toLowerCase();
+  const currentUsername = String(userSnap.data()?.username ?? "")
+    .trim()
+    .toLowerCase();
 
   if (currentUsername === username) {
     return {
@@ -359,9 +406,7 @@ export const checkUsernameAvailability = onCall(async (request) => {
   }
 
   if (reservationSnap.exists) {
-    const ownerUid = String(
-      reservationSnap.data()?.uid ?? "",
-    );
+    const ownerUid = String(reservationSnap.data()?.uid ?? "");
 
     if (ownerUid !== uid) {
       return {
@@ -399,7 +444,6 @@ export const checkUsernameAvailability = onCall(async (request) => {
   };
 });
 
-
 /**
  * Save the authenticated user's profile photo URL.
  *
@@ -427,12 +471,9 @@ export const setProfilePhoto = onCall(async (request) => {
   const [metadata] = await file.getMetadata();
 
   const size = Number(metadata.size ?? 0);
-  const contentType = String(
-    metadata.contentType ?? "",
-  ).toLowerCase();
+  const contentType = String(metadata.contentType ?? "").toLowerCase();
 
-  const MAX_PROFILE_PHOTO_SIZE =
-    5 * 1024 * 1024;
+  const MAX_PROFILE_PHOTO_SIZE = 5 * 1024 * 1024;
 
   if (
     size <= 0 ||
@@ -440,16 +481,10 @@ export const setProfilePhoto = onCall(async (request) => {
     !contentType.startsWith("image/")
   ) {
     await file.delete().catch((error) => {
-      console.warn(
-        "Could not delete invalid profile photo:",
-        error,
-      );
+      console.warn("Could not delete invalid profile photo:", error);
     });
 
-    throw new HttpsError(
-      "invalid-argument",
-      "Invalid profile photo.",
-    );
+    throw new HttpsError("invalid-argument", "Invalid profile photo.");
   }
 
   const [downloadUrl] = await file.getSignedUrl({
@@ -469,7 +504,6 @@ export const setProfilePhoto = onCall(async (request) => {
   };
 });
 
-
 /**
  * Get current SanCoin wallet.
  */
@@ -480,10 +514,7 @@ export const getSanCoinWallet = onCall(async (request) => {
   const snap = await ref.get();
 
   if (!snap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "User profile not found.",
-    );
+    throw new HttpsError("not-found", "User profile not found.");
   }
 
   const data = snap.data() ?? {};
@@ -499,7 +530,6 @@ export const getSanCoinWallet = onCall(async (request) => {
   };
 });
 
-
 /**
  * Apply referral exactly once.
  *
@@ -509,15 +539,12 @@ export const getSanCoinWallet = onCall(async (request) => {
 export const applyReferral = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const code = String(
-    request.data?.code ?? "",
-  ).trim().toUpperCase();
+  const code = String(request.data?.code ?? "")
+    .trim()
+    .toUpperCase();
 
   if (!code) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Referral code required.",
-    );
+    throw new HttpsError("invalid-argument", "Referral code required.");
   }
 
   const currentUserRef = userDb.collection("users").doc(uid);
@@ -534,14 +561,8 @@ export const applyReferral = onCall(async (request) => {
 
     const current = currentSnap.data() ?? {};
 
-    if (
-      current.referralRewardClaimed === true ||
-      current.referredBy
-    ) {
-      throw new HttpsError(
-        "already-exists",
-        "Referral has already been used.",
-      );
+    if (current.referralRewardClaimed === true || current.referredBy) {
+      throw new HttpsError("already-exists", "Referral has already been used.");
     }
 
     const query = await userDb
@@ -551,10 +572,7 @@ export const applyReferral = onCall(async (request) => {
       .get();
 
     if (query.empty) {
-      throw new HttpsError(
-        "not-found",
-        "Invalid referral code.",
-      );
+      throw new HttpsError("not-found", "Invalid referral code.");
     }
 
     const referrerDoc = query.docs[0];
@@ -568,11 +586,13 @@ export const applyReferral = onCall(async (request) => {
 
     const referrer = referrerDoc.data();
 
+    const currentBalance = numberValue(current.sanCoins) + REFERRAL_USER_BONUS;
+
+    const referrerBalance = numberValue(referrer.sanCoins) + REFERRER_BONUS;
+
     tx.update(currentUserRef, {
-      sanCoins:
-        numberValue(current.sanCoins) + REFERRAL_USER_BONUS,
-      earnedCoins:
-        numberValue(current.earnedCoins) + REFERRAL_USER_BONUS,
+      sanCoins: currentBalance,
+      earnedCoins: numberValue(current.earnedCoins) + REFERRAL_USER_BONUS,
       referredBy: referrerDoc.id,
       referralRewardClaimed: true,
       referralAppliedAt: FieldValue.serverTimestamp(),
@@ -580,27 +600,44 @@ export const applyReferral = onCall(async (request) => {
     });
 
     tx.update(referrerDoc.ref, {
-      sanCoins:
-        numberValue(referrer.sanCoins) + REFERRER_BONUS,
-      earnedCoins:
-        numberValue(referrer.earnedCoins) + REFERRER_BONUS,
+      sanCoins: referrerBalance,
+      earnedCoins: numberValue(referrer.earnedCoins) + REFERRER_BONUS,
       referralCount: FieldValue.increment(1),
       updatedAt: FieldValue.serverTimestamp(),
     });
 
+    createSanCoinLedgerEntry(
+      tx,
+      `referral_user_${uid}_${referrerDoc.id}`,
+      uid,
+      "referral_bonus",
+      REFERRAL_USER_BONUS,
+      currentBalance,
+      "Referral signup bonus",
+      `${uid}_${referrerDoc.id}`,
+    );
+
+    createSanCoinLedgerEntry(
+      tx,
+      `referral_referrer_${referrerDoc.id}_${uid}`,
+      referrerDoc.id,
+      "referral_reward",
+      REFERRER_BONUS,
+      referrerBalance,
+      "Referral reward",
+      `${uid}_${referrerDoc.id}`,
+    );
+
     const referralId = `${uid}_${referrerDoc.id}`;
 
-    tx.create(
-      userDb.collection("referral_rewards").doc(referralId),
-      {
-        referredUserId: uid,
-        referrerUserId: referrerDoc.id,
-        code,
-        newUserReward: REFERRAL_USER_BONUS,
-        referrerReward: REFERRER_BONUS,
-        createdAt: FieldValue.serverTimestamp(),
-      },
-    );
+    tx.create(userDb.collection("referral_rewards").doc(referralId), {
+      referredUserId: uid,
+      referrerUserId: referrerDoc.id,
+      code,
+      newUserReward: REFERRAL_USER_BONUS,
+      referrerReward: REFERRER_BONUS,
+      createdAt: FieldValue.serverTimestamp(),
+    });
   });
 
   return {
@@ -610,7 +647,6 @@ export const applyReferral = onCall(async (request) => {
   };
 });
 
-
 /**
  * Reward a completed rewarded ad.
  *
@@ -619,20 +655,13 @@ export const applyReferral = onCall(async (request) => {
 export const rewardAd = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const rewardId = String(
-    request.data?.rewardId ?? "",
-  ).trim();
+  const rewardId = String(request.data?.rewardId ?? "").trim();
 
   if (!rewardId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "rewardId required.",
-    );
+    throw new HttpsError("invalid-argument", "rewardId required.");
   }
 
-  const rewardRef = userDb
-    .collection("ad_rewards")
-    .doc(`${uid}_${rewardId}`);
+  const rewardRef = userDb.collection("ad_rewards").doc(`${uid}_${rewardId}`);
 
   const userRef = userDb.collection("users").doc(uid);
 
@@ -649,22 +678,30 @@ export const rewardAd = onCall(async (request) => {
     const userSnap = await tx.get(userRef);
 
     if (!userSnap.exists) {
-      throw new HttpsError(
-        "failed-precondition",
-        "User profile missing.",
-      );
+      throw new HttpsError("failed-precondition", "User profile missing.");
     }
 
     const user = userSnap.data() ?? {};
 
+    const newBalance = numberValue(user.sanCoins) + AD_REWARD;
+
     tx.update(userRef, {
-      sanCoins:
-        numberValue(user.sanCoins) + AD_REWARD,
-      earnedCoins:
-        numberValue(user.earnedCoins) + AD_REWARD,
+      sanCoins: newBalance,
+      earnedCoins: numberValue(user.earnedCoins) + AD_REWARD,
       adsWatched: FieldValue.increment(1),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    createSanCoinLedgerEntry(
+      tx,
+      `ad_${uid}_${rewardId}`,
+      uid,
+      "ad_reward",
+      AD_REWARD,
+      newBalance,
+      "Rewarded advertisement",
+      rewardId,
+    );
 
     tx.create(rewardRef, {
       uid,
@@ -679,7 +716,6 @@ export const rewardAd = onCall(async (request) => {
   };
 });
 
-
 /**
  * Purchase an academic resource permanently.
  *
@@ -688,27 +724,19 @@ export const rewardAd = onCall(async (request) => {
 export const purchaseResource = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
-  const resourceRef =
-    vaultDb.collection("academic_vault").doc(resourceId);
+  const resourceRef = vaultDb.collection("academic_vault").doc(resourceId);
 
-  const buyerRef =
-    userDb.collection("users").doc(uid);
+  const buyerRef = userDb.collection("users").doc(uid);
 
-  const purchaseRef =
-    userDb.collection("purchases").doc(
-      `${uid}_${resourceId}`,
-    );
+  const purchaseRef = userDb
+    .collection("purchases")
+    .doc(`${uid}_${resourceId}`);
 
   /*
    * Read the resource from the trusted SanVault database.
@@ -717,10 +745,7 @@ export const purchaseResource = onCall(async (request) => {
   const resourceSnap = await resourceRef.get();
 
   if (!resourceSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Document not found.",
-    );
+    throw new HttpsError("not-found", "Document not found.");
   }
 
   const resource = resourceSnap.data() ?? {};
@@ -734,15 +759,8 @@ export const purchaseResource = onCall(async (request) => {
 
   const price = numberValue(resource.price);
 
-  if (
-    !Number.isInteger(price) ||
-    price < MIN_PRICE ||
-    price > MAX_PRICE
-  ) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Invalid document price.",
-    );
+  if (!Number.isInteger(price) || price < MIN_PRICE || price > MAX_PRICE) {
+    throw new HttpsError("failed-precondition", "Invalid document price.");
   }
 
   let result: Record<string, unknown> = {};
@@ -751,11 +769,19 @@ export const purchaseResource = onCall(async (request) => {
     const buyerSnap = await tx.get(buyerRef);
     const purchaseSnap = await tx.get(purchaseRef);
 
+    let uploaderSnap:
+      | FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>
+      | null =
+      null;
+
+    if (resource.uploaderId) {
+      const uploaderRef = userDb.collection("users").doc(resource.uploaderId);
+
+      uploaderSnap = await tx.get(uploaderRef);
+    }
+
     if (!buyerSnap.exists) {
-      throw new HttpsError(
-        "failed-precondition",
-        "User profile missing.",
-      );
+      throw new HttpsError("failed-precondition", "User profile missing.");
     }
 
     if (purchaseSnap.exists) {
@@ -777,12 +803,25 @@ export const purchaseResource = onCall(async (request) => {
       );
     }
 
+    const buyerBalanceAfter = coins - price;
+
     tx.update(buyerRef, {
-      sanCoins: coins - price,
+      sanCoins: buyerBalanceAfter,
       spentCoins: FieldValue.increment(price),
       purchasedKnowledge: FieldValue.increment(1),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    createSanCoinLedgerEntry(
+      tx,
+      `purchase_${uid}_${resourceId}`,
+      uid,
+      "resource_purchase",
+      -price,
+      buyerBalanceAfter,
+      "Academic resource purchase",
+      resourceId,
+    );
 
     tx.create(purchaseRef, {
       buyerId: uid,
@@ -795,18 +834,34 @@ export const purchaseResource = onCall(async (request) => {
     });
 
     if (resource.uploaderId) {
-      const uploaderRef =
-        userDb.collection("users").doc(resource.uploaderId);
+      const uploaderRef = userDb.collection("users").doc(resource.uploaderId);
 
-      tx.set(
-        uploaderRef,
-        {
-          sanCoins: FieldValue.increment(price),
-          earnedCoins: FieldValue.increment(price),
-          salesCount: FieldValue.increment(1),
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        {merge: true},
+      if (!uploaderSnap?.exists) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Uploader profile missing.",
+        );
+      }
+
+      const uploader = uploaderSnap.data() ?? {};
+      const uploaderBalanceAfter = numberValue(uploader.sanCoins) + price;
+
+      tx.update(uploaderRef, {
+        sanCoins: uploaderBalanceAfter,
+        earnedCoins: FieldValue.increment(price),
+        salesCount: FieldValue.increment(1),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      createSanCoinLedgerEntry(
+        tx,
+        `sale_${resource.uploaderId}_${uid}_${resourceId}`,
+        resource.uploaderId,
+        "resource_sale",
+        price,
+        uploaderBalanceAfter,
+        "Academic resource sale",
+        resourceId,
       );
     }
 
@@ -819,7 +874,6 @@ export const purchaseResource = onCall(async (request) => {
 
   return result;
 });
-
 
 /**
  * Follow another SanSphere user.
@@ -834,34 +888,22 @@ export const purchaseResource = onCall(async (request) => {
 export const followUser = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const targetUid = String(
-    request.data?.targetUid ?? "",
-  ).trim();
+  const targetUid = String(request.data?.targetUid ?? "").trim();
 
   if (!targetUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Target user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Target user is required.");
   }
 
   if (targetUid === uid) {
-    throw new HttpsError(
-      "failed-precondition",
-      "You cannot follow yourself.",
-    );
+    throw new HttpsError("failed-precondition", "You cannot follow yourself.");
   }
 
   const followerRef = userDb.collection("users").doc(uid);
   const targetRef = userDb.collection("users").doc(targetUid);
 
-  const followingRef = followerRef
-    .collection("following")
-    .doc(targetUid);
+  const followingRef = followerRef.collection("following").doc(targetUid);
 
-  const followerRelationRef = targetRef
-    .collection("followers")
-    .doc(uid);
+  const followerRelationRef = targetRef.collection("followers").doc(uid);
 
   let alreadyFollowing = false;
 
@@ -871,17 +913,11 @@ export const followUser = onCall(async (request) => {
     const relationSnap = await tx.get(followingRef);
 
     if (!followerSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "Your profile was not found.",
-      );
+      throw new HttpsError("not-found", "Your profile was not found.");
     }
 
     if (!targetSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "Target profile was not found.",
-      );
+      throw new HttpsError("not-found", "Target profile was not found.");
     }
 
     if (relationSnap.exists) {
@@ -919,7 +955,6 @@ export const followUser = onCall(async (request) => {
   };
 });
 
-
 /**
  * Unfollow another SanSphere user.
  *
@@ -928,15 +963,10 @@ export const followUser = onCall(async (request) => {
 export const unfollowUser = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const targetUid = String(
-    request.data?.targetUid ?? "",
-  ).trim();
+  const targetUid = String(request.data?.targetUid ?? "").trim();
 
   if (!targetUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Target user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Target user is required.");
   }
 
   if (targetUid === uid) {
@@ -949,13 +979,9 @@ export const unfollowUser = onCall(async (request) => {
   const followerRef = userDb.collection("users").doc(uid);
   const targetRef = userDb.collection("users").doc(targetUid);
 
-  const followingRef = followerRef
-    .collection("following")
-    .doc(targetUid);
+  const followingRef = followerRef.collection("following").doc(targetUid);
 
-  const followerRelationRef = targetRef
-    .collection("followers")
-    .doc(uid);
+  const followerRelationRef = targetRef.collection("followers").doc(uid);
 
   let alreadyFollowing = true;
 
@@ -965,17 +991,11 @@ export const unfollowUser = onCall(async (request) => {
     const relationSnap = await tx.get(followingRef);
 
     if (!followerSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "Your profile was not found.",
-      );
+      throw new HttpsError("not-found", "Your profile was not found.");
     }
 
     if (!targetSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "Target profile was not found.",
-      );
+      throw new HttpsError("not-found", "Target profile was not found.");
     }
 
     if (!relationSnap.exists) {
@@ -1004,22 +1024,16 @@ export const unfollowUser = onCall(async (request) => {
   };
 });
 
-
 /**
  * Check whether the authenticated user follows another user.
  */
 export const checkFollowing = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const targetUid = String(
-    request.data?.targetUid ?? "",
-  ).trim();
+  const targetUid = String(request.data?.targetUid ?? "").trim();
 
   if (!targetUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Target user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Target user is required.");
   }
 
   const relation = await userDb
@@ -1033,7 +1047,6 @@ export const checkFollowing = onCall(async (request) => {
     following: relation.exists,
   };
 });
-
 
 /**
  * Check permanent ownership.
@@ -1049,40 +1062,26 @@ export const checkFollowing = onCall(async (request) => {
 export const submitResourceRating = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   const rating = Number(request.data?.rating);
-  const review = String(
-    request.data?.review ?? "",
-  ).trim();
+  const review = String(request.data?.review ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Rating must be between 1 and 5.",
-    );
+    throw new HttpsError("invalid-argument", "Rating must be between 1 and 5.");
   }
 
   const purchaseRef = userDb
     .collection("purchases")
     .doc(`${uid}_${resourceId}`);
 
-  const resourceRef = vaultDb
-    .collection("academic_vault")
-    .doc(resourceId);
+  const resourceRef = vaultDb.collection("academic_vault").doc(resourceId);
 
-  const ratingRef = resourceRef
-    .collection("ratings")
-    .doc(uid);
+  const ratingRef = resourceRef.collection("ratings").doc(uid);
 
   /*
    * Purchase ownership is verified against the real purchase database.
@@ -1108,16 +1107,11 @@ export const submitResourceRating = onCall(async (request) => {
     const ratingSnap = await tx.get(ratingRef);
 
     if (!resourceSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "Resource not found.",
-      );
+      throw new HttpsError("not-found", "Resource not found.");
     }
 
     const resourceData = resourceSnap.data() ?? {};
-    const oldRating = Number(
-      ratingSnap.data()?.rating ?? 0,
-    );
+    const oldRating = Number(ratingSnap.data()?.rating ?? 0);
 
     const hasOldRating =
       ratingSnap.exists &&
@@ -1125,9 +1119,7 @@ export const submitResourceRating = onCall(async (request) => {
       oldRating >= 1 &&
       oldRating <= 5;
 
-    const currentRating = numberValue(
-      resourceData.rating,
-    );
+    const currentRating = numberValue(resourceData.rating);
 
     const currentCount = Math.max(
       0,
@@ -1138,20 +1130,13 @@ export const submitResourceRating = onCall(async (request) => {
     let newAverage: number;
 
     if (hasOldRating) {
-      const total =
-        currentRating * currentCount -
-        oldRating +
-        rating;
+      const total = currentRating * currentCount - oldRating + rating;
 
-      newAverage = newCount > 0 ?
-        total / newCount :
-        rating;
+      newAverage = newCount > 0 ? total / newCount : rating;
     } else {
       newCount = currentCount + 1;
 
-      const total =
-        currentRating * currentCount +
-        rating;
+      const total = currentRating * currentCount + rating;
 
       newAverage = total / newCount;
     }
@@ -1171,9 +1156,7 @@ export const submitResourceRating = onCall(async (request) => {
         userName: displayName,
         rating,
         review,
-        createdAt:
-          ratingSnap.data()?.createdAt ??
-          FieldValue.serverTimestamp(),
+        createdAt: ratingSnap.data()?.createdAt ?? FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       },
       {merge: true},
@@ -1196,19 +1179,13 @@ export const submitResourceRating = onCall(async (request) => {
   return result;
 });
 
-
 export const checkPurchase = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
   const purchase = await userDb
@@ -1217,12 +1194,9 @@ export const checkPurchase = onCall(async (request) => {
     .get();
 
   return {
-    purchased:
-      purchase.exists &&
-      purchase.data()?.permanentlyOwned === true,
+    purchased: purchase.exists && purchase.data()?.permanentlyOwned === true,
   };
 });
-
 
 /**
  * Return a short-lived signed URL after purchase.
@@ -1230,15 +1204,10 @@ export const checkPurchase = onCall(async (request) => {
 export const getPurchasedFileUrl = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
   const purchase = await userDb
@@ -1246,14 +1215,8 @@ export const getPurchasedFileUrl = onCall(async (request) => {
     .doc(`${uid}_${resourceId}`)
     .get();
 
-  if (
-    !purchase.exists ||
-    purchase.data()?.permanentlyOwned !== true
-  ) {
-    throw new HttpsError(
-      "permission-denied",
-      "Purchase required.",
-    );
+  if (!purchase.exists || purchase.data()?.permanentlyOwned !== true) {
+    throw new HttpsError("permission-denied", "Purchase required.");
   }
 
   const resource = await vaultDb
@@ -1262,10 +1225,7 @@ export const getPurchasedFileUrl = onCall(async (request) => {
     .get();
 
   if (!resource.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Document not found.",
-    );
+    throw new HttpsError("not-found", "Document not found.");
   }
 
   const data = resource.data() ?? {};
@@ -1278,13 +1238,11 @@ export const getPurchasedFileUrl = onCall(async (request) => {
     );
   }
 
-  const [url] = await bucket
-    .file(String(storagePath))
-    .getSignedUrl({
-      version: "v4",
-      action: "read",
-      expires: Date.now() + 10 * 60 * 1000,
-    });
+  const [url] = await bucket.file(String(storagePath)).getSignedUrl({
+    version: "v4",
+    action: "read",
+    expires: Date.now() + 10 * 60 * 1000,
+  });
 
   return {
     success: true,
@@ -1292,7 +1250,6 @@ export const getPurchasedFileUrl = onCall(async (request) => {
     expiresInSeconds: 600,
   };
 });
-
 
 /**
  * Automatically initialize a wallet when a user profile
@@ -1317,35 +1274,38 @@ export const createUserWallet = onDocumentCreated(
 
       if (data.walletInitialized === true) return;
 
+      const initialCoins = numberValue(data.sanCoins, NEW_USER_COINS);
+
       tx.set(
         ref,
         {
-          sanCoins: numberValue(
-            data.sanCoins,
-            NEW_USER_COINS,
-          ),
-          earnedCoins: numberValue(
-            data.earnedCoins,
-            NEW_USER_COINS,
-          ),
+          sanCoins: initialCoins,
+          earnedCoins: numberValue(data.earnedCoins, initialCoins),
           spentCoins: numberValue(data.spentCoins),
-          purchasedKnowledge:
-            numberValue(data.purchasedKnowledge),
-          adsWatched:
-            numberValue(data.adsWatched),
-          referralCount:
-            numberValue(data.referralCount),
+          purchasedKnowledge: numberValue(data.purchasedKnowledge),
+          adsWatched: numberValue(data.adsWatched),
+          referralCount: numberValue(data.referralCount),
           walletInitialized: true,
           updatedAt: FieldValue.serverTimestamp(),
         },
         {merge: true},
+      );
+
+      createSanCoinLedgerEntry(
+        tx,
+        `initial_${uid}`,
+        uid,
+        "initial_grant",
+        initialCoins,
+        initialCoins,
+        "New user SanCoin grant",
+        uid,
       );
     });
 
     console.log(`SanCoin wallet initialized for ${uid}`);
   },
 );
-
 
 /**
  * Delete an uploaded academic resource permanently.
@@ -1363,27 +1323,18 @@ export const createUserWallet = onDocumentCreated(
 export const deleteAcademicResource = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
-  const resourceRef =
-    vaultDb.collection("academic_vault").doc(resourceId);
+  const resourceRef = vaultDb.collection("academic_vault").doc(resourceId);
 
   const resourceSnap = await resourceRef.get();
 
   if (!resourceSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Resource not found.",
-    );
+    throw new HttpsError("not-found", "Resource not found.");
   }
 
   const resource = resourceSnap.data() ?? {};
@@ -1395,9 +1346,7 @@ export const deleteAcademicResource = onCall(async (request) => {
     );
   }
 
-  const storagePath = String(
-    resource.storagePath ?? "",
-  ).trim();
+  const storagePath = String(resource.storagePath ?? "").trim();
 
   /*
    * Remove all purchase records associated with this resource.
@@ -1428,9 +1377,7 @@ export const deleteAcademicResource = onCall(async (request) => {
    * Delete the actual uploaded file.
    */
   if (storagePath) {
-    await bucket
-      .file(storagePath)
-      .delete({ignoreNotFound: true});
+    await bucket.file(storagePath).delete({ignoreNotFound: true});
   }
 
   /*
@@ -1445,7 +1392,6 @@ export const deleteAcademicResource = onCall(async (request) => {
   };
 });
 
-
 /**
  * Delete only the current user's purchase record.
  *
@@ -1455,15 +1401,10 @@ export const deleteAcademicResource = onCall(async (request) => {
 export const deletePurchase = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
   const purchaseRef = userDb
@@ -1473,10 +1414,7 @@ export const deletePurchase = onCall(async (request) => {
   const purchaseSnap = await purchaseRef.get();
 
   if (!purchaseSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Purchase not found.",
-    );
+    throw new HttpsError("not-found", "Purchase not found.");
   }
 
   const purchase = purchaseSnap.data() ?? {};
@@ -1496,7 +1434,6 @@ export const deletePurchase = onCall(async (request) => {
   };
 });
 
-
 /**
  * Delete an uploaded academic resource completely.
  *
@@ -1512,28 +1449,18 @@ export const deletePurchase = onCall(async (request) => {
 export const deleteUploadedResource = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const resourceId = String(
-    request.data?.resourceId ?? "",
-  ).trim();
+  const resourceId = String(request.data?.resourceId ?? "").trim();
 
   if (!resourceId) {
-    throw new HttpsError(
-      "invalid-argument",
-      "resourceId required.",
-    );
+    throw new HttpsError("invalid-argument", "resourceId required.");
   }
 
-  const resourceRef = vaultDb
-    .collection("academic_vault")
-    .doc(resourceId);
+  const resourceRef = vaultDb.collection("academic_vault").doc(resourceId);
 
   const resourceSnap = await resourceRef.get();
 
   if (!resourceSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Resource not found.",
-    );
+    throw new HttpsError("not-found", "Resource not found.");
   }
 
   const resource = resourceSnap.data() ?? {};
@@ -1555,19 +1482,11 @@ export const deleteUploadedResource = onCall(async (request) => {
    */
   if (storagePath) {
     try {
-      await bucket
-        .file(String(storagePath))
-        .delete({ignoreNotFound: true});
+      await bucket.file(String(storagePath)).delete({ignoreNotFound: true});
     } catch (error) {
-      console.error(
-        "Storage deletion failed:",
-        error,
-      );
+      console.error("Storage deletion failed:", error);
 
-      throw new HttpsError(
-        "internal",
-        "Could not delete the uploaded file.",
-      );
+      throw new HttpsError("internal", "Could not delete the uploaded file.");
     }
   }
 
@@ -1599,7 +1518,6 @@ export const deleteUploadedResource = onCall(async (request) => {
   };
 });
 
-
 /**
  * Check whether a phone number already exists in Firebase Authentication.
  *
@@ -1608,9 +1526,7 @@ export const deleteUploadedResource = onCall(async (request) => {
  * The phone number must be E.164, for example +919876543210.
  */
 export const checkPhoneAuthAccount = onCall(async (request) => {
-  const phoneNumber = String(
-    request.data?.phoneNumber ?? "",
-  ).trim();
+  const phoneNumber = String(request.data?.phoneNumber ?? "").trim();
 
   if (!/^\+[1-9]\d{7,14}$/.test(phoneNumber)) {
     throw new HttpsError(
@@ -1636,12 +1552,8 @@ export const checkPhoneAuthAccount = onCall(async (request) => {
     };
   } catch (error: unknown) {
     const code =
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error ?
-        String(
-          (error as {code?: unknown}).code ?? "",
-        ) :
+      typeof error === "object" && error !== null && "code" in error ?
+        String((error as { code?: unknown }).code ?? "") :
         "";
 
     if (code == "auth/user-not-found") {
@@ -1658,10 +1570,7 @@ export const checkPhoneAuthAccount = onCall(async (request) => {
       };
     }
 
-    console.error(
-      "checkPhoneAuthAccount failed:",
-      error,
-    );
+    console.error("checkPhoneAuthAccount failed:", error);
 
     throw new HttpsError(
       "internal",
@@ -1669,7 +1578,6 @@ export const checkPhoneAuthAccount = onCall(async (request) => {
     );
   }
 });
-
 
 /**
  * Submit or update a review for another user's profile.
@@ -1680,21 +1588,14 @@ export const checkPhoneAuthAccount = onCall(async (request) => {
 export const submitProfileReview = onCall(async (request) => {
   const reviewerUid = requireAuth(request);
 
-  const profileUid = String(
-    request.data?.profileUid ?? "",
-  ).trim();
+  const profileUid = String(request.data?.profileUid ?? "").trim();
 
   const rating = Number(request.data?.rating);
 
-  const review = String(
-    request.data?.review ?? "",
-  ).trim();
+  const review = String(request.data?.review ?? "").trim();
 
   if (!profileUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Profile user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Profile user is required.");
   }
 
   if (profileUid === reviewerUid) {
@@ -1705,10 +1606,7 @@ export const submitProfileReview = onCall(async (request) => {
   }
 
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Rating must be between 1 and 5.",
-    );
+    throw new HttpsError("invalid-argument", "Rating must be between 1 and 5.");
   }
 
   if (review.length > 1000) {
@@ -1718,19 +1616,13 @@ export const submitProfileReview = onCall(async (request) => {
     );
   }
 
-  const profileRef = userDb
-    .collection("users")
-    .doc(profileUid);
+  const profileRef = userDb.collection("users").doc(profileUid);
 
-  const reviewerRef = userDb
-    .collection("users")
-    .doc(reviewerUid);
+  const reviewerRef = userDb.collection("users").doc(reviewerUid);
 
   const reviewId = `${reviewerUid}_${profileUid}`;
 
-  const reviewRef = userDb
-    .collection("profile_reviews")
-    .doc(reviewId);
+  const reviewRef = userDb.collection("profile_reviews").doc(reviewId);
 
   const [profileSnap, reviewerSnap] = await Promise.all([
     profileRef.get(),
@@ -1738,29 +1630,20 @@ export const submitProfileReview = onCall(async (request) => {
   ]);
 
   if (!profileSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Profile not found.",
-    );
+    throw new HttpsError("not-found", "Profile not found.");
   }
 
   if (!reviewerSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Reviewer profile not found.",
-    );
+    throw new HttpsError("not-found", "Reviewer profile not found.");
   }
 
   const profileData = profileSnap.data() ?? {};
   const reviewerData = reviewerSnap.data() ?? {};
 
-  const profileVisibility =
-    String(profileData.profileVisibility ?? "public");
+  const profileVisibility = String(profileData.profileVisibility ?? "public");
 
   if (profileVisibility === "private") {
-    const followingRef = profileRef
-      .collection("followers")
-      .doc(reviewerUid);
+    const followingRef = profileRef.collection("followers").doc(reviewerUid);
 
     const followingSnap = await followingRef.get();
 
@@ -1777,11 +1660,9 @@ export const submitProfileReview = onCall(async (request) => {
     String(reviewerData.username ?? "").trim() ||
     "SanSphere User";
 
-  const reviewerUsername =
-    String(reviewerData.username ?? "").trim();
+  const reviewerUsername = String(reviewerData.username ?? "").trim();
 
-  const reviewerPhotoUrl =
-    String(reviewerData.profilePhotoUrl ?? "").trim();
+  const reviewerPhotoUrl = String(reviewerData.profilePhotoUrl ?? "").trim();
 
   const now = FieldValue.serverTimestamp();
 
@@ -1804,9 +1685,7 @@ export const submitProfileReview = onCall(async (request) => {
 
     const currentCount = Math.max(
       0,
-      Math.trunc(
-        numberValue(profileData.reviewsCount),
-      ),
+      Math.trunc(numberValue(profileData.reviewsCount)),
     );
 
     tx.set(reviewRef, {
@@ -1834,22 +1713,16 @@ export const submitProfileReview = onCall(async (request) => {
   };
 });
 
-
 /**
  * Return the current user's review for a profile.
  */
 export const getMyProfileReview = onCall(async (request) => {
   const reviewerUid = requireAuth(request);
 
-  const profileUid = String(
-    request.data?.profileUid ?? "",
-  ).trim();
+  const profileUid = String(request.data?.profileUid ?? "").trim();
 
   if (!profileUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Profile user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Profile user is required.");
   }
 
   if (profileUid === reviewerUid) {
@@ -1861,10 +1734,7 @@ export const getMyProfileReview = onCall(async (request) => {
 
   const reviewId = `${reviewerUid}_${profileUid}`;
 
-  const snap = await userDb
-    .collection("profile_reviews")
-    .doc(reviewId)
-    .get();
+  const snap = await userDb.collection("profile_reviews").doc(reviewId).get();
 
   if (!snap.exists) {
     return {
@@ -1879,7 +1749,6 @@ export const getMyProfileReview = onCall(async (request) => {
   };
 });
 
-
 /**
  * Return reviews for a profile.
  *
@@ -1888,37 +1757,25 @@ export const getMyProfileReview = onCall(async (request) => {
 export const getProfileReviews = onCall(async (request) => {
   const requesterUid = requireAuth(request);
 
-  const profileUid = String(
-    request.data?.profileUid ?? "",
-  ).trim();
+  const profileUid = String(request.data?.profileUid ?? "").trim();
 
   if (!profileUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Profile user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Profile user is required.");
   }
 
-  const profileRef = userDb
-    .collection("users")
-    .doc(profileUid);
+  const profileRef = userDb.collection("users").doc(profileUid);
 
   const profileSnap = await profileRef.get();
 
   if (!profileSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Profile not found.",
-    );
+    throw new HttpsError("not-found", "Profile not found.");
   }
 
   const profileData = profileSnap.data() ?? {};
 
-  const isOwnProfile =
-    requesterUid === profileUid;
+  const isOwnProfile = requesterUid === profileUid;
 
-  const profileVisibility =
-    String(profileData.profileVisibility ?? "public");
+  const profileVisibility = String(profileData.profileVisibility ?? "public");
 
   if (!isOwnProfile && profileVisibility === "private") {
     const followerSnap = await profileRef
@@ -1950,7 +1807,6 @@ export const getProfileReviews = onCall(async (request) => {
   };
 });
 
-
 /**
  * Return privacy-safe identity data for social lists.
  *
@@ -1965,10 +1821,7 @@ export const getSocialUsers = onCall(async (request) => {
   const rawUserIds = request.data?.userIds;
 
   if (!Array.isArray(rawUserIds)) {
-    throw new HttpsError(
-      "invalid-argument",
-      "userIds must be an array.",
-    );
+    throw new HttpsError("invalid-argument", "userIds must be an array.");
   }
 
   const userIds = Array.from(
@@ -1993,9 +1846,7 @@ export const getSocialUsers = onCall(async (request) => {
     };
   }
 
-  const refs = userIds.map((uid) =>
-    userDb.collection("users").doc(uid),
-  );
+  const refs = userIds.map((uid) => userDb.collection("users").doc(uid));
 
   const snapshots = await userDb.getAll(...refs);
 
@@ -2007,17 +1858,10 @@ export const getSocialUsers = onCall(async (request) => {
       return {
         uid: snap.id,
         fullName:
-          typeof data.fullName === "string" ?
-            data.fullName :
-            "Sansphere User",
-        username:
-          typeof data.username === "string" ?
-            data.username :
-            "",
+          typeof data.fullName === "string" ? data.fullName : "Sansphere User",
+        username: typeof data.username === "string" ? data.username : "",
         profilePhotoUrl:
-          typeof data.profilePhotoUrl === "string" ?
-            data.profilePhotoUrl :
-            "",
+          typeof data.profilePhotoUrl === "string" ? data.profilePhotoUrl : "",
       };
     });
 
@@ -2026,7 +1870,6 @@ export const getSocialUsers = onCall(async (request) => {
     users,
   };
 });
-
 
 /**
  * Return privacy-safe information about a chat peer.
@@ -2041,15 +1884,10 @@ export const getSocialUsers = onCall(async (request) => {
 export const getChatPeerInfo = onCall(async (request) => {
   const requesterUid = requireAuth(request);
 
-  const peerUid = String(
-    request.data?.peerUid ?? "",
-  ).trim();
+  const peerUid = String(request.data?.peerUid ?? "").trim();
 
   if (!peerUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Peer user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Peer user is required.");
   }
 
   if (requesterUid === peerUid) {
@@ -2061,17 +1899,12 @@ export const getChatPeerInfo = onCall(async (request) => {
 
   const chatId = [requesterUid, peerUid].sort().join("_");
 
-  const chatRef = userDb
-    .collection("chats")
-    .doc(chatId);
+  const chatRef = userDb.collection("chats").doc(chatId);
 
   const chatSnap = await chatRef.get();
 
   if (!chatSnap.exists) {
-    throw new HttpsError(
-      "permission-denied",
-      "Chat access is required.",
-    );
+    throw new HttpsError("permission-denied", "Chat access is required.");
   }
 
   const chatData = chatSnap.data() ?? {};
@@ -2088,39 +1921,28 @@ export const getChatPeerInfo = onCall(async (request) => {
     );
   }
 
-  const peerRef = userDb
-    .collection("users")
-    .doc(peerUid);
+  const peerRef = userDb.collection("users").doc(peerUid);
 
   const peerSnap = await peerRef.get();
 
   if (!peerSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Chat user profile not found.",
-    );
+    throw new HttpsError("not-found", "Chat user profile not found.");
   }
 
   const peer = peerSnap.data() ?? {};
 
-  const showPhoneNumber =
-    peer.showPhoneNumber === true;
+  const showPhoneNumber = peer.showPhoneNumber === true;
 
   return {
     success: true,
-    college:
-      typeof peer.college === "string" ?
-        peer.college :
-        "",
+    college: typeof peer.college === "string" ? peer.college : "",
     showPhoneNumber,
     phoneNumber:
-      showPhoneNumber &&
-      typeof peer.phoneNumber === "string" ?
+      showPhoneNumber && typeof peer.phoneNumber === "string" ?
         peer.phoneNumber :
         "",
   };
 });
-
 
 /**
  * Return the authenticated user's privacy settings.
@@ -2134,28 +1956,19 @@ export const getPrivacySettings = onCall(async (request) => {
   const userSnap = await userRef.get();
 
   if (!userSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "User profile not found.",
-    );
+    throw new HttpsError("not-found", "User profile not found.");
   }
 
   const data = userSnap.data() ?? {};
 
   const profileVisibility =
-    data.profileVisibility === "private" ?
-      "private" :
-      "public";
+    data.profileVisibility === "private" ? "private" : "public";
 
   const normalizeResourceVisibility = (
     value: unknown,
     fallback: string,
   ): string => {
-    if (
-      value === "public" ||
-      value === "followers" ||
-      value === "private"
-    ) {
+    if (value === "public" || value === "followers" || value === "private") {
       return String(value);
     }
 
@@ -2165,23 +1978,18 @@ export const getPrivacySettings = onCall(async (request) => {
   return {
     success: true,
     profileVisibility,
-    uploadedResourcesVisibility:
-      normalizeResourceVisibility(
-        data.uploadedResourcesVisibility,
-        "public",
-      ),
-    purchasedResourcesVisibility:
-      normalizeResourceVisibility(
-        data.purchasedResourcesVisibility,
-        "private",
-      ),
-    showActivity:
-      data.showActivity !== false,
-    allowMessages:
-      data.allowMessages !== false,
+    uploadedResourcesVisibility: normalizeResourceVisibility(
+      data.uploadedResourcesVisibility,
+      "public",
+    ),
+    purchasedResourcesVisibility: normalizeResourceVisibility(
+      data.purchasedResourcesVisibility,
+      "private",
+    ),
+    showActivity: data.showActivity !== false,
+    allowMessages: data.allowMessages !== false,
   };
 });
-
 
 /**
  * Update the authenticated user's privacy settings.
@@ -2192,75 +2000,50 @@ export const getPrivacySettings = onCall(async (request) => {
 export const updatePrivacySettings = onCall(async (request) => {
   const uid = requireAuth(request);
 
-  const profileVisibility =
-    String(request.data?.profileVisibility ?? "").trim();
+  const profileVisibility = String(
+    request.data?.profileVisibility ?? "",
+  ).trim();
 
-  const uploadedResourcesVisibility =
-    String(
-      request.data?.uploadedResourcesVisibility ?? "",
-    ).trim();
+  const uploadedResourcesVisibility = String(
+    request.data?.uploadedResourcesVisibility ?? "",
+  ).trim();
 
-  const purchasedResourcesVisibility =
-    String(
-      request.data?.purchasedResourcesVisibility ?? "",
-    ).trim();
+  const purchasedResourcesVisibility = String(
+    request.data?.purchasedResourcesVisibility ?? "",
+  ).trim();
 
-  const showActivity =
-    request.data?.showActivity === true;
+  const showActivity = request.data?.showActivity === true;
 
-  const allowMessages =
-    request.data?.allowMessages !== false;
+  const allowMessages = request.data?.allowMessages !== false;
 
-  const validProfileVisibility = [
-    "public",
-    "private",
-  ];
+  const validProfileVisibility = ["public", "private"];
 
-  const validResourceVisibility = [
-    "public",
-    "followers",
-    "private",
-  ];
+  const validResourceVisibility = ["public", "followers", "private"];
 
   if (!validProfileVisibility.includes(profileVisibility)) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Invalid profile visibility.",
-    );
+    throw new HttpsError("invalid-argument", "Invalid profile visibility.");
   }
 
-  if (
-    !validResourceVisibility.includes(
-      uploadedResourcesVisibility,
-    )
-  ) {
+  if (!validResourceVisibility.includes(uploadedResourcesVisibility)) {
     throw new HttpsError(
       "invalid-argument",
       "Invalid uploaded resource visibility.",
     );
   }
 
-  if (
-    !validResourceVisibility.includes(
-      purchasedResourcesVisibility,
-    )
-  ) {
+  if (!validResourceVisibility.includes(purchasedResourcesVisibility)) {
     throw new HttpsError(
       "invalid-argument",
       "Invalid purchased resource visibility.",
     );
   }
 
-  const userRef =
-    userDb.collection("users").doc(uid);
+  const userRef = userDb.collection("users").doc(uid);
 
   const userSnap = await userRef.get();
 
   if (!userSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "User profile not found.",
-    );
+    throw new HttpsError("not-found", "User profile not found.");
   }
 
   await userRef.update({
@@ -2282,7 +2065,6 @@ export const updatePrivacySettings = onCall(async (request) => {
   };
 });
 
-
 /**
  * Return a privacy-safe public profile.
  *
@@ -2292,33 +2074,23 @@ export const updatePrivacySettings = onCall(async (request) => {
 export const getPublicProfile = onCall(async (request) => {
   const requesterUid = requireAuth(request);
 
-  const targetUid = String(
-    request.data?.targetUid ?? "",
-  ).trim();
+  const targetUid = String(request.data?.targetUid ?? "").trim();
 
   if (!targetUid) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Target user is required.",
-    );
+    throw new HttpsError("invalid-argument", "Target user is required.");
   }
 
-  const targetRef =
-    userDb.collection("users").doc(targetUid);
+  const targetRef = userDb.collection("users").doc(targetUid);
 
   const targetSnap = await targetRef.get();
 
   if (!targetSnap.exists) {
-    throw new HttpsError(
-      "not-found",
-      "Profile not found.",
-    );
+    throw new HttpsError("not-found", "Profile not found.");
   }
 
   const raw = targetSnap.data() ?? {};
 
-  const isOwnProfile =
-    requesterUid === targetUid;
+  const isOwnProfile = requesterUid === targetUid;
 
   /*
    * Check the existing social-graph relationship.
@@ -2330,20 +2102,15 @@ export const getPublicProfile = onCall(async (request) => {
   let isFollowing = false;
 
   if (!isOwnProfile) {
-    const followingRef = targetRef
-      .collection("followers")
-      .doc(requesterUid);
+    const followingRef = targetRef.collection("followers").doc(requesterUid);
 
-    const followingSnap =
-      await followingRef.get();
+    const followingSnap = await followingRef.get();
 
     isFollowing = followingSnap.exists;
   }
 
   const profileVisibility =
-    raw.profileVisibility === "private" ?
-      "private" :
-      "public";
+    raw.profileVisibility === "private" ? "private" : "public";
 
   const uploadedResourcesVisibility =
     raw.uploadedResourcesVisibility === "followers" ?
@@ -2359,18 +2126,14 @@ export const getPublicProfile = onCall(async (request) => {
         "private" :
         "public";
 
-  const showActivity =
-    raw.showActivity !== false;
+  const showActivity = raw.showActivity !== false;
 
-  const allowMessages =
-    raw.allowMessages !== false;
+  const allowMessages = raw.allowMessages !== false;
 
   /*
    * The owner can always see their own profile/activity.
    */
-  const canViewProfile =
-    isOwnProfile ||
-    profileVisibility === "public";
+  const canViewProfile = isOwnProfile || profileVisibility === "public";
 
   /*
    * Resource visibility:
@@ -2382,39 +2145,20 @@ export const getPublicProfile = onCall(async (request) => {
    */
   const canViewUploadedResources =
     isOwnProfile ||
-    (
-      canViewProfile &&
-      (
-        uploadedResourcesVisibility === "public" ||
-        (
-          uploadedResourcesVisibility === "followers" &&
-          isFollowing
-        )
-      )
-    );
+    (canViewProfile &&
+      (uploadedResourcesVisibility === "public" ||
+        (uploadedResourcesVisibility === "followers" && isFollowing)));
 
   const canViewPurchasedResources =
     isOwnProfile ||
-    (
-      canViewProfile &&
-      (
-        purchasedResourcesVisibility === "public" ||
-        (
-          purchasedResourcesVisibility === "followers" &&
-          isFollowing
-        )
-      )
-    );
+    (canViewProfile &&
+      (purchasedResourcesVisibility === "public" ||
+        (purchasedResourcesVisibility === "followers" && isFollowing)));
 
   /*
    * Activity is controlled separately.
    */
-  const canViewActivity =
-    isOwnProfile ||
-    (
-      canViewProfile &&
-      showActivity
-    );
+  const canViewActivity = isOwnProfile || (canViewProfile && showActivity);
 
   /*
    * A private profile still exposes only safe identity
@@ -2424,28 +2168,18 @@ export const getPublicProfile = onCall(async (request) => {
     userId: targetUid,
 
     fullName:
-      typeof raw.fullName === "string" ?
-        raw.fullName :
-        "Sansphere User",
+      typeof raw.fullName === "string" ? raw.fullName : "Sansphere User",
 
-    username:
-      typeof raw.username === "string" ?
-        raw.username :
-        "",
+    username: typeof raw.username === "string" ? raw.username : "",
 
     profilePhotoUrl:
-      typeof raw.profilePhotoUrl === "string" ?
-        raw.profilePhotoUrl :
-        "",
+      typeof raw.profilePhotoUrl === "string" ? raw.profilePhotoUrl : "",
 
-    followersCount:
-      numberValue(raw.followersCount),
+    followersCount: numberValue(raw.followersCount),
 
-    followingCount:
-      numberValue(raw.followingCount),
+    followingCount: numberValue(raw.followingCount),
 
-    reviewsCount:
-      numberValue(raw.reviewsCount),
+    reviewsCount: numberValue(raw.reviewsCount),
 
     profileVisibility,
 
@@ -2457,11 +2191,7 @@ export const getPublicProfile = onCall(async (request) => {
     canViewPurchasedResources,
     canViewActivity,
 
-    allowMessages:
-      isOwnProfile || (
-        canViewProfile &&
-        allowMessages
-      ),
+    allowMessages: isOwnProfile || (canViewProfile && allowMessages),
   };
 
   /*
@@ -2469,30 +2199,17 @@ export const getPublicProfile = onCall(async (request) => {
    * itself is viewable.
    */
   if (canViewProfile) {
-    result.bio =
-      typeof raw.bio === "string" ?
-        raw.bio :
-        "";
+    result.bio = typeof raw.bio === "string" ? raw.bio : "";
 
-    result.college =
-      typeof raw.college === "string" ?
-        raw.college :
-        "";
+    result.college = typeof raw.college === "string" ? raw.college : "";
 
-    result.branch =
-      typeof raw.branch === "string" ?
-        raw.branch :
-        "";
+    result.branch = typeof raw.branch === "string" ? raw.branch : "";
 
-    result.year =
-      typeof raw.year === "string" ?
-        raw.year :
-        "";
+    result.year = typeof raw.year === "string" ? raw.year : "";
   }
 
   return result;
 });
-
 
 /**
  * Return resources that the requester is allowed to see
@@ -2504,359 +2221,152 @@ export const getPublicProfile = onCall(async (request) => {
  * - Actual file access remains protected by the existing
  *   purchase/signed-URL functions.
  */
-export const getVisibleProfileResources = onCall(
-  async (request) => {
-    const requesterUid = requireAuth(request);
+export const getVisibleProfileResources = onCall(async (request) => {
+  const requesterUid = requireAuth(request);
 
-    const targetUid = String(
-      request.data?.targetUid ?? "",
-    ).trim();
+  const targetUid = String(request.data?.targetUid ?? "").trim();
 
-    const resourceType = String(
-      request.data?.resourceType ?? "",
-    ).trim();
+  const resourceType = String(request.data?.resourceType ?? "").trim();
 
-    if (!targetUid) {
-      throw new HttpsError(
-        "invalid-argument",
-        "Target user is required.",
-      );
-    }
+  if (!targetUid) {
+    throw new HttpsError("invalid-argument", "Target user is required.");
+  }
 
-    if (
-      resourceType !== "uploaded" &&
-      resourceType !== "purchased"
-    ) {
-      throw new HttpsError(
-        "invalid-argument",
-        "Invalid resource type.",
-      );
-    }
+  if (resourceType !== "uploaded" && resourceType !== "purchased") {
+    throw new HttpsError("invalid-argument", "Invalid resource type.");
+  }
 
-    const targetRef =
-      userDb.collection("users").doc(targetUid);
+  const targetRef = userDb.collection("users").doc(targetUid);
 
-    const targetSnap = await targetRef.get();
+  const targetSnap = await targetRef.get();
 
-    if (!targetSnap.exists) {
-      throw new HttpsError(
-        "not-found",
-        "Profile not found.",
-      );
-    }
+  if (!targetSnap.exists) {
+    throw new HttpsError("not-found", "Profile not found.");
+  }
 
-    const userData = targetSnap.data() ?? {};
+  const userData = targetSnap.data() ?? {};
 
-    const isOwnProfile =
-      requesterUid === targetUid;
+  const isOwnProfile = requesterUid === targetUid;
 
-    let isFollowing = false;
+  let isFollowing = false;
 
-    if (!isOwnProfile) {
-      const followerSnap = await targetRef
-        .collection("followers")
-        .doc(requesterUid)
-        .get();
+  if (!isOwnProfile) {
+    const followerSnap = await targetRef
+      .collection("followers")
+      .doc(requesterUid)
+      .get();
 
-      isFollowing = followerSnap.exists;
-    }
+    isFollowing = followerSnap.exists;
+  }
 
-    const profileVisibility =
-      userData.profileVisibility === "private" ?
+  const profileVisibility =
+    userData.profileVisibility === "private" ? "private" : "public";
+
+  /*
+   * A private profile does not expose resource activity
+   * to other users.
+   */
+  if (!isOwnProfile && profileVisibility === "private") {
+    return {
+      success: true,
+      resourceType,
+      resources: [],
+      visible: false,
+      reason: "private_profile",
+    };
+  }
+
+  const visibilityField =
+    resourceType === "uploaded" ?
+      userData.uploadedResourcesVisibility :
+      userData.purchasedResourcesVisibility;
+
+  const defaultVisibility = resourceType === "purchased" ? "private" : "public";
+
+  const visibility =
+    visibilityField === "followers" ?
+      "followers" :
+      visibilityField === "private" ?
         "private" :
-        "public";
+        defaultVisibility;
 
-    /*
-     * A private profile does not expose resource activity
-     * to other users.
-     */
-    if (
-      !isOwnProfile &&
-      profileVisibility === "private"
-    ) {
-      return {
-        success: true,
-        resourceType,
-        resources: [],
-        visible: false,
-        reason: "private_profile",
-      };
-    }
+  const allowed =
+    isOwnProfile ||
+    visibility === "public" ||
+    (visibility === "followers" && isFollowing);
 
-    const visibilityField =
-      resourceType === "uploaded" ?
-        userData.uploadedResourcesVisibility :
-        userData.purchasedResourcesVisibility;
+  if (!allowed) {
+    return {
+      success: true,
+      resourceType,
+      resources: [],
+      visible: false,
+      reason: "privacy_restricted",
+    };
+  }
 
-    const defaultVisibility =
-      resourceType === "purchased" ?
-        "private" :
-        "public";
-
-    const visibility =
-      visibilityField === "followers" ?
-        "followers" :
-        visibilityField === "private" ?
-          "private" :
-          defaultVisibility;
-
-    const allowed =
-      isOwnProfile ||
-      visibility === "public" ||
-      (
-        visibility === "followers" &&
-        isFollowing
-      );
-
-    if (!allowed) {
-      return {
-        success: true,
-        resourceType,
-        resources: [],
-        visible: false,
-        reason: "privacy_restricted",
-      };
-    }
-
-    /*
-     * --------------------------------------------------------
-     * UPLOADED RESOURCES
-     * --------------------------------------------------------
-     */
-    if (resourceType === "uploaded") {
-      const resourceSnapshot = await vaultDb
-        .collection("academic_vault")
-        .where("uploaderId", "==", targetUid)
-        .limit(50)
-        .get();
-
-      const resources = resourceSnapshot.docs.map(
-        (doc) => {
-          const data = doc.data();
-
-          return {
-            resourceId: doc.id,
-
-            title: String(
-              data.title ?? "Untitled Resource",
-            ),
-
-            description: String(
-              data.description ?? "",
-            ),
-
-            subject: String(
-              data.subject ?? "",
-            ),
-
-            college: String(
-              data.college ?? "",
-            ),
-
-            department: String(
-              data.department ?? "",
-            ),
-
-            type: String(
-              data.type ??
-                data.category ??
-                "Lecture Notes",
-            ),
-
-            price: numberValue(data.price),
-
-            uploaderId: String(
-              data.uploaderId ?? targetUid,
-            ),
-
-            uploaderName: String(
-              data.uploaderName ??
-                data.authorName ??
-                "",
-            ),
-
-            semester: numberValue(
-              data.semester,
-            ),
-
-            category: String(
-              data.category ?? "lectureNotes",
-            ),
-
-            fileName: String(
-              data.fileName ?? "",
-            ),
-
-            fileSizeMb: numberValue(
-              data.fileSizeMb ??
-                data.fileSize,
-            ),
-
-            rating: numberValue(
-              data.rating,
-            ),
-
-            ratingCount: numberValue(
-              data.ratingCount,
-            ),
-
-            tags: Array.isArray(data.tags) ?
-              data.tags.map((tag) =>
-                String(tag),
-              ) :
-              [],
-
-            /*
-             * Deliberately omitted:
-             *
-             * fileUrl
-             * storagePath
-             *
-             * Actual file access remains protected.
-             */
-          };
-        },
-      );
-
-      return {
-        success: true,
-        resourceType,
-        resources,
-        visible: true,
-      };
-    }
-
-    /*
-     * --------------------------------------------------------
-     * PURCHASED RESOURCES
-     * --------------------------------------------------------
-     *
-     * Purchases are stored in the main users database.
-     * The actual resource is stored in SanVault.
-     */
-    const purchasesSnapshot = await userDb
-      .collection("purchases")
-      .where("buyerId", "==", targetUid)
+  /*
+   * --------------------------------------------------------
+   * UPLOADED RESOURCES
+   * --------------------------------------------------------
+   */
+  if (resourceType === "uploaded") {
+    const resourceSnapshot = await vaultDb
+      .collection("academic_vault")
+      .where("uploaderId", "==", targetUid)
       .limit(50)
       .get();
 
-    const resources: Record<string, unknown>[] = [];
+    const resources = resourceSnapshot.docs.map((doc) => {
+      const data = doc.data();
 
-    for (const purchaseDoc of purchasesSnapshot.docs) {
-      const purchase =
-        purchaseDoc.data();
+      return {
+        resourceId: doc.id,
 
-      if (
-        purchase.permanentlyOwned !== true
-      ) {
-        continue;
-      }
+        title: String(data.title ?? "Untitled Resource"),
 
-      const resourceId = String(
-        purchase.resourceId ?? "",
-      ).trim();
+        description: String(data.description ?? ""),
 
-      if (!resourceId) {
-        continue;
-      }
+        subject: String(data.subject ?? ""),
 
-      const resourceSnap = await vaultDb
-        .collection("academic_vault")
-        .doc(resourceId)
-        .get();
+        college: String(data.college ?? ""),
 
-      if (!resourceSnap.exists) {
-        continue;
-      }
+        department: String(data.department ?? ""),
 
-      const data =
-        resourceSnap.data() ?? {};
+        type: String(data.type ?? data.category ?? "Lecture Notes"),
 
-      resources.push({
-        resourceId: resourceSnap.id,
+        price: numberValue(data.price),
 
-        title: String(
-          data.title ?? "Untitled Resource",
-        ),
+        uploaderId: String(data.uploaderId ?? targetUid),
 
-        description: String(
-          data.description ?? "",
-        ),
+        uploaderName: String(data.uploaderName ?? data.authorName ?? ""),
 
-        subject: String(
-          data.subject ?? "",
-        ),
+        semester: numberValue(data.semester),
 
-        college: String(
-          data.college ?? "",
-        ),
+        category: String(data.category ?? "lectureNotes"),
 
-        department: String(
-          data.department ?? "",
-        ),
+        fileName: String(data.fileName ?? ""),
 
-        type: String(
-          data.type ??
-            data.category ??
-            "Lecture Notes",
-        ),
+        fileSizeMb: numberValue(data.fileSizeMb ?? data.fileSize),
 
-        price: numberValue(
-          data.price,
-        ),
+        rating: numberValue(data.rating),
 
-        uploaderId: String(
-          data.uploaderId ?? "",
-        ),
-
-        uploaderName: String(
-          data.uploaderName ??
-            data.authorName ??
-            "",
-        ),
-
-        semester: numberValue(
-          data.semester,
-        ),
-
-        category: String(
-          data.category ?? "lectureNotes",
-        ),
-
-        fileName: String(
-          data.fileName ?? "",
-        ),
-
-        fileSizeMb: numberValue(
-          data.fileSizeMb ??
-            data.fileSize,
-        ),
-
-        rating: numberValue(
-          data.rating,
-        ),
-
-        ratingCount: numberValue(
-          data.ratingCount,
-        ),
+        ratingCount: numberValue(data.ratingCount),
 
         tags: Array.isArray(data.tags) ?
-          data.tags.map((tag) =>
-            String(tag),
-          ) :
+          data.tags.map((tag) => String(tag)) :
           [],
-
-        purchasedAt:
-          purchase.purchasedAt ??
-          null,
 
         /*
          * Deliberately omitted:
+         *
          * fileUrl
          * storagePath
+         *
+         * Actual file access remains protected.
          */
-      });
-    }
+      };
+    });
 
     return {
       success: true,
@@ -2864,5 +2374,97 @@ export const getVisibleProfileResources = onCall(
       resources,
       visible: true,
     };
-  },
-);
+  }
+
+  /*
+   * --------------------------------------------------------
+   * PURCHASED RESOURCES
+   * --------------------------------------------------------
+   *
+   * Purchases are stored in the main users database.
+   * The actual resource is stored in SanVault.
+   */
+  const purchasesSnapshot = await userDb
+    .collection("purchases")
+    .where("buyerId", "==", targetUid)
+    .limit(50)
+    .get();
+
+  const resources: Record<string, unknown>[] = [];
+
+  for (const purchaseDoc of purchasesSnapshot.docs) {
+    const purchase = purchaseDoc.data();
+
+    if (purchase.permanentlyOwned !== true) {
+      continue;
+    }
+
+    const resourceId = String(purchase.resourceId ?? "").trim();
+
+    if (!resourceId) {
+      continue;
+    }
+
+    const resourceSnap = await vaultDb
+      .collection("academic_vault")
+      .doc(resourceId)
+      .get();
+
+    if (!resourceSnap.exists) {
+      continue;
+    }
+
+    const data = resourceSnap.data() ?? {};
+
+    resources.push({
+      resourceId: resourceSnap.id,
+
+      title: String(data.title ?? "Untitled Resource"),
+
+      description: String(data.description ?? ""),
+
+      subject: String(data.subject ?? ""),
+
+      college: String(data.college ?? ""),
+
+      department: String(data.department ?? ""),
+
+      type: String(data.type ?? data.category ?? "Lecture Notes"),
+
+      price: numberValue(data.price),
+
+      uploaderId: String(data.uploaderId ?? ""),
+
+      uploaderName: String(data.uploaderName ?? data.authorName ?? ""),
+
+      semester: numberValue(data.semester),
+
+      category: String(data.category ?? "lectureNotes"),
+
+      fileName: String(data.fileName ?? ""),
+
+      fileSizeMb: numberValue(data.fileSizeMb ?? data.fileSize),
+
+      rating: numberValue(data.rating),
+
+      ratingCount: numberValue(data.ratingCount),
+
+      tags: Array.isArray(data.tags) ? data.tags.map((tag) => String(tag)) : [],
+
+      purchasedAt: purchase.purchasedAt ?? null,
+
+      /*
+       * Deliberately omitted:
+       * fileUrl
+       * storagePath
+       */
+    });
+  }
+
+  return {
+    success: true,
+    resourceType,
+    resources,
+    visible: true,
+  };
+});
