@@ -64,6 +64,66 @@ class SocialProfileService {
     return false;
   }
 
+  Future<Map<String, dynamic>> checkUsernameAvailability(
+    String username,
+  ) async {
+    final value = username.trim().toLowerCase();
+
+    if (value.isEmpty) {
+      return <String, dynamic>{
+        'available': false,
+        'reason': 'Username is required.',
+      };
+    }
+
+    final result = await _functions
+        .httpsCallable('checkUsernameAvailability')
+        .call(<String, dynamic>{'username': value});
+
+    final data = result.data;
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    throw StateError('Invalid username availability response.');
+  }
+
+  Future<List<Map<String, dynamic>>> getSocialUsers(
+    List<String> userIds,
+  ) async {
+    final ids = userIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (ids.isEmpty) {
+      return <Map<String, dynamic>>[];
+    }
+
+    final result = await _functions.httpsCallable('getSocialUsers').call(
+      <String, dynamic>{'userIds': ids},
+    );
+
+    final data = result.data;
+
+    if (data is! Map) {
+      throw StateError('Invalid social users response.');
+    }
+
+    final rawUsers = data['users'];
+
+    if (rawUsers is! List) {
+      return <Map<String, dynamic>>[];
+    }
+
+    return rawUsers
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
   Future<Map<String, dynamic>> getPublicProfile(String targetUid) async {
     final uid = targetUid.trim();
 

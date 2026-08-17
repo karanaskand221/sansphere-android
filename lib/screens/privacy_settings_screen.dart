@@ -1,6 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import '../services/privacy_settings_service.dart';
@@ -13,11 +10,6 @@ class PrivacySettingsScreen extends StatefulWidget {
 }
 
 class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'sansphere',
-  );
-
   String _profileVisibility = 'public';
   String _uploadedResourcesVisibility = 'public';
   String _purchasedResourcesVisibility = 'private';
@@ -35,19 +27,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    if (uid == null) {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-      return;
-    }
-
     try {
-      final snapshot = await _firestore.collection('users').doc(uid).get();
-
-      final data = snapshot.data() ?? {};
+      final data = await PrivacySettingsService.instance.getPrivacySettings();
 
       if (!mounted) return;
 

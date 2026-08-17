@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../services/social_profile_service.dart';
 import 'public_profile_resources_screen.dart';
+import 'profile_reviews_screen.dart';
 import 'chat_list_screen.dart';
 
 class PublicProfileScreen extends StatefulWidget {
@@ -493,7 +494,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               icon: Icons.star_outline_rounded,
               title: 'Reviews',
               subtitle: 'Reviews given to this profile',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileReviewsScreen(
+                      profileUid: widget.userId,
+                      profileName: fullName,
+                      canReview: !_isOwnProfile,
+                    ),
+                  ),
+                );
+              },
             ),
 
           if (!canViewUploadedResources &&

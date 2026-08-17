@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class PrivacySettingsService {
   PrivacySettingsService._();
@@ -6,8 +7,23 @@ class PrivacySettingsService {
   static final PrivacySettingsService instance = PrivacySettingsService._();
 
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    app: Firebase.app(),
     region: 'us-central1',
   );
+
+  Future<Map<String, dynamic>> getPrivacySettings() async {
+    final callable = _functions.httpsCallable('getPrivacySettings');
+
+    final result = await callable.call();
+
+    final data = result.data;
+
+    if (data is! Map) {
+      throw StateError('Invalid privacy settings response.');
+    }
+
+    return Map<String, dynamic>.from(data);
+  }
 
   Future<Map<String, dynamic>> updatePrivacySettings({
     required String profileVisibility,
@@ -17,7 +33,6 @@ class PrivacySettingsService {
     required bool allowMessages,
   }) async {
     const validProfileVisibility = {'public', 'private'};
-
     const validResourceVisibility = {'public', 'followers', 'private'};
 
     if (!validProfileVisibility.contains(profileVisibility)) {
@@ -42,6 +57,12 @@ class PrivacySettingsService {
       'allowMessages': allowMessages,
     });
 
-    return Map<String, dynamic>.from(result.data as Map);
+    final data = result.data;
+
+    if (data is! Map) {
+      throw StateError('Invalid privacy settings response.');
+    }
+
+    return Map<String, dynamic>.from(data);
   }
 }

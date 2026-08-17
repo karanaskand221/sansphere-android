@@ -110,6 +110,10 @@ export const initializeSanCoins = onCall(async (request) => {
 export const updateProfile = onCall(async (request) => {
   const uid = requireAuth(request);
 
+  const username = String(
+    request.data?.username ?? "",
+  ).trim().toLowerCase();
+
   const bio = String(request.data?.bio ?? "").trim();
   const specification = String(
     request.data?.specification ?? "",
@@ -127,7 +131,24 @@ export const updateProfile = onCall(async (request) => {
   const PROFILE_EDIT_COST = 17;
   const COOLDOWN_DAYS = 30;
 
+  const USERNAME_MIN_LENGTH = 3;
+  const USERNAME_MAX_LENGTH = 30;
+  const USERNAME_PATTERN = /^[a-z0-9_]+$/;
+
+  if (
+    username.length < USERNAME_MIN_LENGTH ||
+    username.length > USERNAME_MAX_LENGTH ||
+    !USERNAME_PATTERN.test(username)
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Username must be 3-30 characters and contain only " +
+      "letters, numbers, and underscores.",
+    );
+  }
+
   const userRef = userDb.collection("users").doc(uid);
+  const usernameRef = userDb.collection("usernames").doc(username);
 
   let result: Record<string, unknown> = {};
 
@@ -142,6 +163,79 @@ export const updateProfile = onCall(async (request) => {
     }
 
     const user = userSnap.data() ?? {};
+
+    const currentUsername = String(
+      user.username ?? "",
+    ).trim().toLowerCase();
+
+    const usernameSnap = await tx.get(usernameRef);
+
+    if (usernameSnap.exists) {
+      const usernameOwner = String(
+        usernameSnap.data()?.uid ?? "",
+      );
+
+      if (usernameOwner !== uid) {
+        throw new HttpsError(
+          "already-exists",
+          "That username is already taken.",
+        );
+      }
+    }
+
+    const legacyUsernameQuery = await tx.get(
+      userDb
+        .collection("users")
+        .where("username", "==", username)
+        .limit(2),
+    );
+
+    const legacyUsernameOwners =
+      legacyUsernameQuery.docs
+        .map((doc) => doc.id)
+        .filter((ownerUid) => ownerUid !== uid);
+
+    if (legacyUsernameOwners.length > 0) {
+      throw new HttpsError(
+        "already-exists",
+        "That username is already taken.",
+      );
+    }
+
+    if (
+      currentUsername.length > 0 &&
+      currentUsername !== username
+    ) {
+      const oldUsernameRef = userDb
+        .collection("usernames")
+        .doc(currentUsername);
+
+      const oldUsernameSnap =
+        await tx.get(oldUsernameRef);
+
+      if (
+        oldUsernameSnap.exists &&
+        String(oldUsernameSnap.data()?.uid ?? "") === uid
+      ) {
+        tx.delete(oldUsernameRef);
+      }
+    }
+
+    tx.set(
+      usernameRef,
+      {
+        "uid": uid,
+        "username": username,
+        "createdAt":
+          usernameSnap.exists ?
+            usernameSnap.data()?.createdAt ??
+                  FieldValue.serverTimestamp() :
+            FieldValue.serverTimestamp(),
+        "updatedAt": FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+    );
+
     const lastProfileUpdate =
       user.lastProfileUpdate;
 
@@ -190,6 +284,7 @@ export const updateProfile = onCall(async (request) => {
     }
 
     tx.update(userRef, {
+      username,
       bio,
       specification,
       college,
@@ -211,6 +306,167 @@ export const updateProfile = onCall(async (request) => {
   });
 
   return result;
+});
+
+
+/**
+ * Check whether a username is available.
+ *
+ * The authenticated user's existing username is considered available
+ * to that same user.
+ */
+export const checkUsernameAvailability = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const username = String(
+    request.data?.username ?? "",
+  ).trim().toLowerCase();
+
+  const USERNAME_MIN_LENGTH = 3;
+  const USERNAME_MAX_LENGTH = 30;
+  const USERNAME_PATTERN = /^[a-z0-9_]+$/;
+
+  if (
+    username.length < USERNAME_MIN_LENGTH ||
+    username.length > USERNAME_MAX_LENGTH ||
+    !USERNAME_PATTERN.test(username)
+  ) {
+    return {
+      available: false,
+      reason:
+        "Username must be 3-30 characters and contain only " +
+        "letters, numbers, and underscores.",
+    };
+  }
+
+  const userRef = userDb.collection("users").doc(uid);
+  const usernameRef = userDb.collection("usernames").doc(username);
+
+  const [userSnap, reservationSnap] = await Promise.all([
+    userRef.get(),
+    usernameRef.get(),
+  ]);
+
+  const currentUsername = String(
+    userSnap.data()?.username ?? "",
+  ).trim().toLowerCase();
+
+  if (currentUsername === username) {
+    return {
+      available: true,
+      current: true,
+    };
+  }
+
+  if (reservationSnap.exists) {
+    const ownerUid = String(
+      reservationSnap.data()?.uid ?? "",
+    );
+
+    if (ownerUid !== uid) {
+      return {
+        available: false,
+        reason: "That username is already taken.",
+      };
+    }
+
+    return {
+      available: true,
+      current: false,
+    };
+  }
+
+  const legacyUsernameQuery = await userDb
+    .collection("users")
+    .where("username", "==", username)
+    .limit(1)
+    .get();
+
+  if (!legacyUsernameQuery.empty) {
+    const ownerUid = legacyUsernameQuery.docs[0].id;
+
+    if (ownerUid !== uid) {
+      return {
+        available: false,
+        reason: "That username is already taken.",
+      };
+    }
+  }
+
+  return {
+    available: true,
+    current: false,
+  };
+});
+
+
+/**
+ * Save the authenticated user's profile photo URL.
+ *
+ * The client may upload only to:
+ * profile_photos/{uid}/profile.jpg
+ *
+ * This function verifies the uploaded object belongs to the
+ * authenticated user before updating the profile document.
+ */
+export const setProfilePhoto = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const filePath = `profile_photos/${uid}/profile.jpg`;
+  const file = bucket.file(filePath);
+
+  const [exists] = await file.exists();
+
+  if (!exists) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Profile photo upload was not found.",
+    );
+  }
+
+  const [metadata] = await file.getMetadata();
+
+  const size = Number(metadata.size ?? 0);
+  const contentType = String(
+    metadata.contentType ?? "",
+  ).toLowerCase();
+
+  const MAX_PROFILE_PHOTO_SIZE =
+    5 * 1024 * 1024;
+
+  if (
+    size <= 0 ||
+    size > MAX_PROFILE_PHOTO_SIZE ||
+    !contentType.startsWith("image/")
+  ) {
+    await file.delete().catch((error) => {
+      console.warn(
+        "Could not delete invalid profile photo:",
+        error,
+      );
+    });
+
+    throw new HttpsError(
+      "invalid-argument",
+      "Invalid profile photo.",
+    );
+  }
+
+  const [downloadUrl] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 3650 * 24 * 60 * 60 * 1000,
+  });
+
+  const userRef = userDb.collection("users").doc(uid);
+
+  await userRef.update({
+    profilePhotoUrl: downloadUrl,
+  });
+
+  return {
+    success: true,
+    profilePhotoUrl: downloadUrl,
+  };
 });
 
 
@@ -1416,6 +1672,518 @@ export const checkPhoneAuthAccount = onCall(async (request) => {
 
 
 /**
+ * Submit or update a review for another user's profile.
+ *
+ * Profile reviews are separate from academic-resource ratings.
+ * Each reviewer may have only one review for a given profile.
+ */
+export const submitProfileReview = onCall(async (request) => {
+  const reviewerUid = requireAuth(request);
+
+  const profileUid = String(
+    request.data?.profileUid ?? "",
+  ).trim();
+
+  const rating = Number(request.data?.rating);
+
+  const review = String(
+    request.data?.review ?? "",
+  ).trim();
+
+  if (!profileUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Profile user is required.",
+    );
+  }
+
+  if (profileUid === reviewerUid) {
+    throw new HttpsError(
+      "failed-precondition",
+      "You cannot review your own profile.",
+    );
+  }
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Rating must be between 1 and 5.",
+    );
+  }
+
+  if (review.length > 1000) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Review must be 1000 characters or fewer.",
+    );
+  }
+
+  const profileRef = userDb
+    .collection("users")
+    .doc(profileUid);
+
+  const reviewerRef = userDb
+    .collection("users")
+    .doc(reviewerUid);
+
+  const reviewId = `${reviewerUid}_${profileUid}`;
+
+  const reviewRef = userDb
+    .collection("profile_reviews")
+    .doc(reviewId);
+
+  const [profileSnap, reviewerSnap] = await Promise.all([
+    profileRef.get(),
+    reviewerRef.get(),
+  ]);
+
+  if (!profileSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Profile not found.",
+    );
+  }
+
+  if (!reviewerSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Reviewer profile not found.",
+    );
+  }
+
+  const profileData = profileSnap.data() ?? {};
+  const reviewerData = reviewerSnap.data() ?? {};
+
+  const profileVisibility =
+    String(profileData.profileVisibility ?? "public");
+
+  if (profileVisibility === "private") {
+    const followingRef = profileRef
+      .collection("followers")
+      .doc(reviewerUid);
+
+    const followingSnap = await followingRef.get();
+
+    if (!followingSnap.exists) {
+      throw new HttpsError(
+        "permission-denied",
+        "Follow this profile before leaving a review.",
+      );
+    }
+  }
+
+  const reviewerName =
+    String(reviewerData.fullName ?? "").trim() ||
+    String(reviewerData.username ?? "").trim() ||
+    "SanSphere User";
+
+  const reviewerUsername =
+    String(reviewerData.username ?? "").trim();
+
+  const reviewerPhotoUrl =
+    String(reviewerData.profilePhotoUrl ?? "").trim();
+
+  const now = FieldValue.serverTimestamp();
+
+  const existingSnap = await reviewRef.get();
+
+  await userDb.runTransaction(async (tx) => {
+    const currentReview = await tx.get(reviewRef);
+
+    if (currentReview.exists) {
+      tx.update(reviewRef, {
+        rating,
+        review,
+        reviewerName,
+        reviewerUsername,
+        reviewerPhotoUrl,
+        updatedAt: now,
+      });
+      return;
+    }
+
+    const currentCount = Math.max(
+      0,
+      Math.trunc(
+        numberValue(profileData.reviewsCount),
+      ),
+    );
+
+    tx.set(reviewRef, {
+      reviewerUid,
+      profileUid,
+      reviewerName,
+      reviewerUsername,
+      reviewerPhotoUrl,
+      rating,
+      review,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    tx.update(profileRef, {
+      reviewsCount: currentCount + 1,
+    });
+  });
+
+  return {
+    success: true,
+    updated: existingSnap.exists,
+    rating,
+    review,
+  };
+});
+
+
+/**
+ * Return the current user's review for a profile.
+ */
+export const getMyProfileReview = onCall(async (request) => {
+  const reviewerUid = requireAuth(request);
+
+  const profileUid = String(
+    request.data?.profileUid ?? "",
+  ).trim();
+
+  if (!profileUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Profile user is required.",
+    );
+  }
+
+  if (profileUid === reviewerUid) {
+    return {
+      exists: false,
+      review: null,
+    };
+  }
+
+  const reviewId = `${reviewerUid}_${profileUid}`;
+
+  const snap = await userDb
+    .collection("profile_reviews")
+    .doc(reviewId)
+    .get();
+
+  if (!snap.exists) {
+    return {
+      exists: false,
+      review: null,
+    };
+  }
+
+  return {
+    exists: true,
+    review: snap.data(),
+  };
+});
+
+
+/**
+ * Return reviews for a profile.
+ *
+ * Private profiles are visible to the owner and followers.
+ */
+export const getProfileReviews = onCall(async (request) => {
+  const requesterUid = requireAuth(request);
+
+  const profileUid = String(
+    request.data?.profileUid ?? "",
+  ).trim();
+
+  if (!profileUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Profile user is required.",
+    );
+  }
+
+  const profileRef = userDb
+    .collection("users")
+    .doc(profileUid);
+
+  const profileSnap = await profileRef.get();
+
+  if (!profileSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Profile not found.",
+    );
+  }
+
+  const profileData = profileSnap.data() ?? {};
+
+  const isOwnProfile =
+    requesterUid === profileUid;
+
+  const profileVisibility =
+    String(profileData.profileVisibility ?? "public");
+
+  if (!isOwnProfile && profileVisibility === "private") {
+    const followerSnap = await profileRef
+      .collection("followers")
+      .doc(requesterUid)
+      .get();
+
+    if (!followerSnap.exists) {
+      throw new HttpsError(
+        "permission-denied",
+        "This profile's reviews are private.",
+      );
+    }
+  }
+
+  const snapshot = await userDb
+    .collection("profile_reviews")
+    .where("profileUid", "==", profileUid)
+    .orderBy("createdAt", "desc")
+    .limit(100)
+    .get();
+
+  return {
+    success: true,
+    reviews: snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })),
+  };
+});
+
+
+/**
+ * Return privacy-safe identity data for social lists.
+ *
+ * This function is intentionally limited to the fields required
+ * by Followers / Following screens.
+ *
+ * It must never return the complete users/{uid} document.
+ */
+export const getSocialUsers = onCall(async (request) => {
+  requireAuth(request);
+
+  const rawUserIds = request.data?.userIds;
+
+  if (!Array.isArray(rawUserIds)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "userIds must be an array.",
+    );
+  }
+
+  const userIds = Array.from(
+    new Set(
+      rawUserIds
+        .map((value) => String(value ?? "").trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+
+  if (userIds.length > 100) {
+    throw new HttpsError(
+      "invalid-argument",
+      "A maximum of 100 users can be requested at once.",
+    );
+  }
+
+  if (userIds.length === 0) {
+    return {
+      success: true,
+      users: [],
+    };
+  }
+
+  const refs = userIds.map((uid) =>
+    userDb.collection("users").doc(uid),
+  );
+
+  const snapshots = await userDb.getAll(...refs);
+
+  const users = snapshots
+    .filter((snap) => snap.exists)
+    .map((snap) => {
+      const data = snap.data() ?? {};
+
+      return {
+        uid: snap.id,
+        fullName:
+          typeof data.fullName === "string" ?
+            data.fullName :
+            "Sansphere User",
+        username:
+          typeof data.username === "string" ?
+            data.username :
+            "",
+        profilePhotoUrl:
+          typeof data.profilePhotoUrl === "string" ?
+            data.profilePhotoUrl :
+            "",
+      };
+    });
+
+  return {
+    success: true,
+    users,
+  };
+});
+
+
+/**
+ * Return privacy-safe information about a chat peer.
+ *
+ * The peer's phone number is returned only when:
+ * 1. the requester is authenticated,
+ * 2. the requester and peer have an existing chat, and
+ * 3. the peer explicitly enabled showPhoneNumber.
+ *
+ * The client never directly reads users/{peerUid}.
+ */
+export const getChatPeerInfo = onCall(async (request) => {
+  const requesterUid = requireAuth(request);
+
+  const peerUid = String(
+    request.data?.peerUid ?? "",
+  ).trim();
+
+  if (!peerUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Peer user is required.",
+    );
+  }
+
+  if (requesterUid === peerUid) {
+    throw new HttpsError(
+      "invalid-argument",
+      "You cannot request your own chat peer info.",
+    );
+  }
+
+  const chatId = [requesterUid, peerUid].sort().join("_");
+
+  const chatRef = userDb
+    .collection("chats")
+    .doc(chatId);
+
+  const chatSnap = await chatRef.get();
+
+  if (!chatSnap.exists) {
+    throw new HttpsError(
+      "permission-denied",
+      "Chat access is required.",
+    );
+  }
+
+  const chatData = chatSnap.data() ?? {};
+  const participants = chatData.participants;
+
+  if (
+    !Array.isArray(participants) ||
+    !participants.includes(requesterUid) ||
+    !participants.includes(peerUid)
+  ) {
+    throw new HttpsError(
+      "permission-denied",
+      "You are not a participant in this chat.",
+    );
+  }
+
+  const peerRef = userDb
+    .collection("users")
+    .doc(peerUid);
+
+  const peerSnap = await peerRef.get();
+
+  if (!peerSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Chat user profile not found.",
+    );
+  }
+
+  const peer = peerSnap.data() ?? {};
+
+  const showPhoneNumber =
+    peer.showPhoneNumber === true;
+
+  return {
+    success: true,
+    college:
+      typeof peer.college === "string" ?
+        peer.college :
+        "",
+    showPhoneNumber,
+    phoneNumber:
+      showPhoneNumber &&
+      typeof peer.phoneNumber === "string" ?
+        peer.phoneNumber :
+        "",
+  };
+});
+
+
+/**
+ * Return the authenticated user's privacy settings.
+ *
+ * This keeps the client from directly reading users/{uid}.
+ */
+export const getPrivacySettings = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const userRef = userDb.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+
+  if (!userSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "User profile not found.",
+    );
+  }
+
+  const data = userSnap.data() ?? {};
+
+  const profileVisibility =
+    data.profileVisibility === "private" ?
+      "private" :
+      "public";
+
+  const normalizeResourceVisibility = (
+    value: unknown,
+    fallback: string,
+  ): string => {
+    if (
+      value === "public" ||
+      value === "followers" ||
+      value === "private"
+    ) {
+      return String(value);
+    }
+
+    return fallback;
+  };
+
+  return {
+    success: true,
+    profileVisibility,
+    uploadedResourcesVisibility:
+      normalizeResourceVisibility(
+        data.uploadedResourcesVisibility,
+        "public",
+      ),
+    purchasedResourcesVisibility:
+      normalizeResourceVisibility(
+        data.purchasedResourcesVisibility,
+        "private",
+      ),
+    showActivity:
+      data.showActivity !== false,
+    allowMessages:
+      data.allowMessages !== false,
+  };
+});
+
+
+/**
  * Update the authenticated user's privacy settings.
  *
  * Privacy changes are validated server-side so the client
@@ -1820,12 +2588,17 @@ export const getVisibleProfileResources = onCall(
         userData.uploadedResourcesVisibility :
         userData.purchasedResourcesVisibility;
 
+    const defaultVisibility =
+      resourceType === "purchased" ?
+        "private" :
+        "public";
+
     const visibility =
       visibilityField === "followers" ?
         "followers" :
         visibilityField === "private" ?
           "private" :
-          "public";
+          defaultVisibility;
 
     const allowed =
       isOwnProfile ||

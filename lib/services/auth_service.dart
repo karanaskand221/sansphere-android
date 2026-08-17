@@ -103,11 +103,19 @@ class AuthService {
   }
 
   Future<bool> accountExistsByUid(String uid) async {
-    if (uid.trim().isEmpty) {
+    final currentUid = _auth.currentUser?.uid;
+
+    if (currentUid == null || currentUid.isEmpty) {
       return false;
     }
 
-    final doc = await _firestore.collection('users').doc(uid.trim()).get();
+    final requestedUid = uid.trim();
+
+    if (requestedUid.isEmpty || requestedUid != currentUid) {
+      return false;
+    }
+
+    final doc = await _firestore.collection('users').doc(currentUid).get();
 
     return doc.exists;
   }

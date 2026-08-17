@@ -6,11 +6,9 @@ class SanCoinService {
 
   static final SanCoinService instance = SanCoinService._();
 
-  final FirebaseFunctions _functions =
-      FirebaseFunctions.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
-  User? get currentUser =>
-      FirebaseAuth.instance.currentUser;
+  User? get currentUser => FirebaseAuth.instance.currentUser;
 
   Map<String, dynamic> _toMap(dynamic data) {
     if (data is Map) {
@@ -21,14 +19,13 @@ class SanCoinService {
   }
 
   Future<Map<String, dynamic>> initializeWallet() async {
-    final result = await _functions
-        .httpsCallable('initializeSanCoins')
-        .call();
+    final result = await _functions.httpsCallable('initializeSanCoins').call();
 
     return _toMap(result.data);
   }
 
   Future<Map<String, dynamic>> updateProfile({
+    required String username,
     required String bio,
     required String specification,
     required String college,
@@ -38,9 +35,8 @@ class SanCoinService {
     required bool showPhoneNumber,
     bool payToEdit = false,
   }) async {
-    final result = await _functions
-        .httpsCallable('updateProfile')
-        .call({
+    final result = await _functions.httpsCallable('updateProfile').call({
+      'username': username.trim().toLowerCase(),
       'bio': bio.trim(),
       'specification': specification.trim(),
       'college': college.trim(),
@@ -54,75 +50,56 @@ class SanCoinService {
     return _toMap(result.data);
   }
 
-
   Future<Map<String, dynamic>> getWallet() async {
-    final result = await _functions
-        .httpsCallable('getSanCoinWallet')
-        .call();
+    final result = await _functions.httpsCallable('getSanCoinWallet').call();
 
     return _toMap(result.data);
   }
 
-  Future<Map<String, dynamic>> applyReferral(
-    String code,
-  ) async {
+  Future<Map<String, dynamic>> applyReferral(String code) async {
     final cleanCode = code.trim().toUpperCase();
 
     if (cleanCode.isEmpty) {
       throw ArgumentError('Referral code required.');
     }
 
-    final result = await _functions
-        .httpsCallable('applyReferral')
-        .call({
+    final result = await _functions.httpsCallable('applyReferral').call({
       'code': cleanCode,
     });
 
     return _toMap(result.data);
   }
 
-  Future<Map<String, dynamic>> rewardAd(
-    String rewardId,
-  ) async {
+  Future<Map<String, dynamic>> rewardAd(String rewardId) async {
     final cleanRewardId = rewardId.trim();
 
     if (cleanRewardId.isEmpty) {
       throw ArgumentError('Reward ID required.');
     }
 
-    final result = await _functions
-        .httpsCallable('rewardAd')
-        .call({
+    final result = await _functions.httpsCallable('rewardAd').call({
       'rewardId': cleanRewardId,
     });
 
     return _toMap(result.data);
   }
 
-  Future<Map<String, dynamic>> purchaseResource(
-    String resourceId,
-  ) async {
+  Future<Map<String, dynamic>> purchaseResource(String resourceId) async {
     final cleanResourceId = resourceId.trim();
 
     if (cleanResourceId.isEmpty) {
       throw ArgumentError('Resource ID required.');
     }
 
-    final result = await _functions
-        .httpsCallable('purchaseResource')
-        .call({
+    final result = await _functions.httpsCallable('purchaseResource').call({
       'resourceId': cleanResourceId,
     });
 
     return _toMap(result.data);
   }
 
-  Future<bool> checkPurchase(
-    String resourceId,
-  ) async {
-    final result = await _functions
-        .httpsCallable('checkPurchase')
-        .call({
+  Future<bool> checkPurchase(String resourceId) async {
+    final result = await _functions.httpsCallable('checkPurchase').call({
       'resourceId': resourceId.trim(),
     });
 
@@ -138,20 +115,13 @@ class SanCoinService {
       throw ArgumentError('Resource ID required.');
     }
 
-    await _functions
-        .httpsCallable('deleteUploadedResource')
-        .call({
+    await _functions.httpsCallable('deleteUploadedResource').call({
       'resourceId': cleanResourceId,
     });
   }
 
-
-  Future<String> getPurchasedFileUrl(
-    String resourceId,
-  ) async {
-    final result = await _functions
-        .httpsCallable('getPurchasedFileUrl')
-        .call({
+  Future<String> getPurchasedFileUrl(String resourceId) async {
+    final result = await _functions.httpsCallable('getPurchasedFileUrl').call({
       'resourceId': resourceId.trim(),
     });
 
@@ -165,20 +135,15 @@ class SanCoinService {
     return url;
   }
 
-  Future<void> deletePurchase(
-    String resourceId,
-  ) async {
+  Future<void> deletePurchase(String resourceId) async {
     final cleanResourceId = resourceId.trim();
 
     if (cleanResourceId.isEmpty) {
       throw ArgumentError('Resource ID required.');
     }
 
-    await _functions
-        .httpsCallable('deletePurchase')
-        .call({
+    await _functions.httpsCallable('deletePurchase').call({
       'resourceId': cleanResourceId,
     });
   }
-
 }

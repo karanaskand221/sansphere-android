@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 final _chatFirestore = FirebaseFirestore.instanceFor(
   app: Firebase.app(),
@@ -240,44 +241,72 @@ class _ChatConversationRoomState extends State<ChatConversationRoom> {
   }
 
   Future<void> _showPeerInfo() async {
-    final doc = await _chatFirestore
-        .collection('users')
-        .doc(widget.peerUid)
-        .get();
-    final data = doc.data();
-    final showPhone = data?['showPhoneNumber'] == true;
-    final phone = data?['phoneNumber'] ?? '';
+    try {
+      final functions = FirebaseFunctions.instanceFor(
+        app: Firebase.app(),
+        region: 'us-central1',
+      );
 
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(widget.peerName),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("College: ${data?['college'] ?? 'N/A'}"),
-            const SizedBox(height: 8),
-            Text(
-              showPhone && phone.toString().isNotEmpty
-                  ? "Phone: $phone"
-                  : "Phone number is private",
-              style: TextStyle(
-                color: showPhone ? Colors.black87 : Colors.grey,
-                fontStyle: showPhone ? FontStyle.normal : FontStyle.italic,
+      final result = await functions.httpsCallable('getChatPeerInfo').call(
+        <String, dynamic>{'peerUid': widget.peerUid},
+      );
+
+      final data = result.data;
+
+      if (data is! Map) {
+        throw Exception('Invalid peer profile response.');
+      }
+
+      final showPhone = data['showPhoneNumber'] == true;
+      final phone = data['phoneNumber']?.toString() ?? '';
+      final college = data['college']?.toString() ?? '';
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(widget.peerName),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("College: ${college.isNotEmpty ? college : 'N/A'}"),
+              const SizedBox(height: 8),
+              Text(
+                showPhone && phone.isNotEmpty
+                    ? "Phone: $phone"
+                    : "Phone number is private",
+                style: TextStyle(
+                  color: showPhone ? Colors.black87 : Colors.grey,
+                  fontStyle: showPhone ? FontStyle.normal : FontStyle.italic,
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Unable to load profile information.'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to load profile information.')),
+      );
+    }
   }
 
   @override

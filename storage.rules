@@ -49,6 +49,34 @@ service firebase.storage {
 
 
     /*
+     * Profile photos
+     *
+     * Profile photos are intentionally publicly readable because
+     * they are displayed on public profiles.
+     *
+     * Only the authenticated owner may create, update, or delete
+     * their own profile photo.
+     */
+    match /profile_photos/{uid}/profile.jpg {
+
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if request.auth != null
+        && request.auth.uid == uid;
+    }
+
+
+    /*
      * Everything else remains blocked.
      */
     match /{allPaths=**} {

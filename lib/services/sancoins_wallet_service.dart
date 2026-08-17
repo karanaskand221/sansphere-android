@@ -1,34 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 class SanCoinsWalletService {
   SanCoinsWalletService._();
 
-  static final SanCoinsWalletService instance =
-      SanCoinsWalletService._();
-
-  final FirebaseFirestore _firestore =
-      FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'sansphere',
-  );
+  static final SanCoinsWalletService instance = SanCoinsWalletService._();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Stream<Map<String, dynamic>?> walletStream() {
-    final user = _auth.currentUser;
-
-    if (user == null) {
-      return const Stream.empty();
-    }
-
-    return _firestore
-        .collection('users')
-        .doc(user.uid)
-        .snapshots()
-        .map((snapshot) => snapshot.data());
-  }
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    app: Firebase.app(),
+    region: 'us-central1',
+  );
 
   Future<Map<String, dynamic>?> getWallet() async {
     final user = _auth.currentUser;
@@ -37,10 +21,15 @@ class SanCoinsWalletService {
       return null;
     }
 
-    final snapshot =
-        await _firestore.collection('users').doc(user.uid).get();
+    final result = await _functions.httpsCallable('getSanCoinWallet').call();
 
-    return snapshot.data();
+    final data = result.data;
+
+    if (data is! Map) {
+      throw StateError('Invalid SanCoin wallet response.');
+    }
+
+    return Map<String, dynamic>.from(data);
   }
 
   Future<int> getSanCoins() async {
@@ -53,5 +42,29 @@ class SanCoinsWalletService {
     final wallet = await getWallet();
 
     return (wallet?['earnedCoins'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<int> getSpentCoins() async {
+    final wallet = await getWallet();
+
+    return (wallet?['spentCoins'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<int> getPurchasedKnowledge() async {
+    final wallet = await getWallet();
+
+    return (wallet?['purchasedKnowledge'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<int> getAdsWatched() async {
+    final wallet = await getWallet();
+
+    return (wallet?['adsWatched'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<int> getReferralCount() async {
+    final wallet = await getWallet();
+
+    return (wallet?['referralCount'] as num?)?.toInt() ?? 0;
   }
 }

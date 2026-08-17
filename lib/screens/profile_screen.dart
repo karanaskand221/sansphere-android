@@ -4,13 +4,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'followers_screen.dart';
+import 'following_screen.dart';
+import 'profile_reviews_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
 import '../services/saved_resource_service.dart';
+import '../services/social_profile_service.dart';
 import 'resource_detail_screen.dart';
 import 'support_screen.dart';
 import 'auth/login_screen.dart';
@@ -26,11 +32,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _firestore = FirebaseFirestore.instanceFor(
-    app: Firebase.app(),
-    databaseId: 'sansphere',
-  );
-
   final _vaultFirestore = FirebaseFirestore.instanceFor(
     app: Firebase.app(),
     databaseId: 'sanvault',
@@ -40,10 +41,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final SavedResourceService _savedResourceService =
       SavedResourceService.instance;
 
+  final SocialProfileService _socialProfileService =
+      SocialProfileService.instance;
+
   bool _isEditing = false;
   bool _isSaving = false;
   Map<String, dynamic>? userData;
 
+  final _usernameController = TextEditingController();
   final _bioController = TextEditingController();
   final _specController = TextEditingController();
   final _collegeController = TextEditingController();
@@ -53,8 +58,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool _showPhoneNumber = false;
 
+  bool _checkingUsername = false;
+  bool? _usernameAvailable;
+  String _usernameAvailabilityMessage = '';
+
+  bool _isUploadingProfilePhoto = false;
+
+  Future<Map<String, dynamic>>? _profileFuture;
+
+  final ImagePicker _imagePicker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid != null) {
+      _profileFuture = _socialProfileService.getPublicProfile(uid);
+    }
+  }
+
   @override
   void dispose() {
+    _usernameController.dispose();
     _bioController.dispose();
     _specController.dispose();
     _collegeController.dispose();
@@ -65,6 +92,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadIntoControllers(Map<String, dynamic> data) {
+    _usernameController.text = (data['username'] ?? '').toString().trim();
     _bioController.text = data['bio'] ?? '';
     _specController.text = data['specification'] ?? '';
     _collegeController.text = data['college'] ?? '';
@@ -84,11 +112,321 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return daysSince >= 30;
   }
 
+  Future<void> _changeProfilePhoto() async {
+    if (_isUploadingProfilePhoto) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in to change your profile photo.'),
+        ),
+      );
+      return;
+    }
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Profile Photo',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Choose how you want to add your photo.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 18),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  title: const Text(
+                    'Take a photo',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext, ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.photo_library_rounded,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                  title: const Text(
+                    'Choose from gallery',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext, ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (source == null || !mounted) return;
+
+    setState(() {
+      _isUploadingProfilePhoto = true;
+    });
+
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 90,
+      );
+
+      if (pickedFile == null) {
+        if (mounted) {
+          setState(() {
+            _isUploadingProfilePhoto = false;
+          });
+        }
+        return;
+      }
+
+      final bytes = await pickedFile.readAsBytes();
+
+      const maxSize = 5 * 1024 * 1024;
+
+      if (bytes.isEmpty) {
+        throw Exception('The selected image is empty.');
+      }
+
+      if (bytes.length > maxSize) {
+        throw Exception('Profile photo must be 5 MB or smaller.');
+      }
+
+      final mimeType = pickedFile.mimeType?.toLowerCase() ?? '';
+
+      if (mimeType.isNotEmpty && !mimeType.startsWith('image/')) {
+        throw Exception('Please select a valid image file.');
+      }
+
+      final storage = FirebaseStorage.instanceFor(
+        app: Firebase.app(),
+        bucket: 'gen-lang-client-0227443307.firebasestorage.app',
+      );
+
+      final storagePath = 'profile_photos/${user.uid}/profile.jpg';
+
+      final storageRef = storage.ref().child(storagePath);
+
+      final metadata = SettableMetadata(
+        contentType: mimeType.startsWith('image/') ? mimeType : 'image/jpeg',
+        customMetadata: {'ownerUid': user.uid, 'purpose': 'profile_photo'},
+      );
+
+      await user.getIdToken(true);
+
+      final uploadTask = storageRef.putData(bytes, metadata);
+
+      await uploadTask;
+
+      final functions = FirebaseFunctions.instanceFor(
+        app: Firebase.app(),
+        region: 'us-central1',
+      );
+
+      final result = await functions.httpsCallable('setProfilePhoto').call();
+
+      final data = result.data;
+
+      if (data is! Map ||
+          data['success'] != true ||
+          data['profilePhotoUrl'] == null) {
+        throw Exception('Profile photo could not be saved.');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _isUploadingProfilePhoto = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile photo updated successfully.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint(
+        'PROFILE PHOTO FUNCTION ERROR: '
+        '${e.code}: ${e.message}',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isUploadingProfilePhoto = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Could not save your profile photo.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } on FirebaseException catch (e) {
+      debugPrint(
+        'PROFILE PHOTO STORAGE ERROR: '
+        '${e.code}: ${e.message}',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isUploadingProfilePhoto = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Could not upload your profile photo.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      debugPrint('PROFILE PHOTO ERROR: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isUploadingProfilePhoto = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _checkUsernameAvailability() async {
+    final username = _usernameController.text.trim().toLowerCase();
+
+    if (username.isEmpty) {
+      if (!mounted) return;
+
+      setState(() {
+        _usernameAvailable = null;
+        _usernameAvailabilityMessage = '';
+      });
+      return;
+    }
+
+    setState(() {
+      _checkingUsername = true;
+      _usernameAvailable = null;
+      _usernameAvailabilityMessage = '';
+    });
+
+    try {
+      final result = await _socialProfileService.checkUsernameAvailability(
+        username,
+      );
+
+      if (!mounted) return;
+
+      final available = result['available'] == true;
+      final reason = (result['reason'] ?? '').toString().trim();
+
+      setState(() {
+        _usernameAvailable = available;
+        _usernameAvailabilityMessage = available
+            ? 'Username is available.'
+            : (reason.isEmpty ? 'That username is already taken.' : reason);
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _usernameAvailable = null;
+        _usernameAvailabilityMessage = 'Could not check username right now.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checkingUsername = false;
+        });
+      }
+    }
+  }
+
   Future<void> _saveProfileChanges(String uid, {bool payToEdit = false}) async {
+    final username = _usernameController.text.trim().toLowerCase();
+
+    if (username.isEmpty) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Username is required.')));
+      return;
+    }
+
+    if (_usernameAvailable == false) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please choose an available username.')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
       final result = await _sanCoinService.updateProfile(
+        username: username,
         bio: _bioController.text,
         specification: _specController.text,
         college: _collegeController.text,
@@ -500,11 +838,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPurchasesSection(String uid) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestore
-          .collection('purchases')
-          .where('buyerId', isEqualTo: uid)
-          .snapshots(),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _socialProfileService.getVisibleProfileResources(
+        targetUid: uid,
+        resourceType: 'purchased',
+      ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -520,9 +858,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        final docs = snapshot.data?.docs ?? [];
+        final resources = snapshot.data ?? <Map<String, dynamic>>[];
 
-        if (docs.isEmpty) {
+        if (resources.isEmpty) {
           return _emptySectionMessage(
             Icons.shopping_bag_outlined,
             'You have no purchases yet.',
@@ -530,92 +868,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
 
         return Column(
-          children: docs.map((purchaseDoc) {
-            final data = purchaseDoc.data() as Map<String, dynamic>? ?? {};
-
-            final resourceId = data['resourceId']?.toString() ?? '';
+          children: resources.map((resourceData) {
+            final resourceId =
+                resourceData['resourceId']?.toString().trim() ?? '';
 
             if (resourceId.isEmpty) {
               return const SizedBox.shrink();
             }
 
-            return FutureBuilder<DocumentSnapshot>(
-              future: _vaultFirestore
-                  .collection('academic_vault')
-                  .doc(resourceId)
-                  .get(),
-              builder: (context, resourceSnapshot) {
-                if (resourceSnapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+            final normalizedData = Map<String, dynamic>.from(resourceData);
+
+            normalizedData['id'] = resourceId;
+
+            try {
+              final resource = AcademicResource.fromMap(
+                normalizedData,
+                resourceId,
+              );
+
+              return _buildResourceCard(resource: resource, purchased: true);
+            } catch (_) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange,
                     ),
-                    child: const Row(
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 12),
-                        Text('Loading purchased resource...'),
-                      ],
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'This purchased resource is no longer available.',
+                      ),
                     ),
-                  );
-                }
-
-                if (!resourceSnapshot.hasData ||
-                    !resourceSnapshot.data!.exists) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(14),
+                    IconButton(
+                      onPressed: () =>
+                          _deletePurchase(AcademicResource(id: resourceId)),
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.orange,
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'This purchased resource is no longer available.',
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () =>
-                              _deletePurchase(AcademicResource(id: resourceId)),
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final resourceData =
-                    resourceSnapshot.data!.data() as Map<String, dynamic>;
-
-                resourceData['id'] = resourceSnapshot.data!.id;
-
-                final resource = AcademicResource.fromMap(
-                  resourceData,
-                  resourceSnapshot.data!.id,
-                );
-
-                return _buildResourceCard(resource: resource, purchased: true);
-              },
-            );
+                  ],
+                ),
+              );
+            }
           }).toList(),
         );
       },
@@ -1323,6 +1623,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
+                    controller: _usernameController,
+                    maxLength: 30,
+                    textInputAction: TextInputAction.next,
+                    onChanged: (_) {
+                      if (_usernameAvailable != null ||
+                          _usernameAvailabilityMessage.isNotEmpty) {
+                        setState(() {
+                          _usernameAvailable = null;
+                          _usernameAvailabilityMessage = '';
+                        });
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: "Username",
+                      hintText: "your_username",
+                      prefixIcon: const Icon(Icons.alternate_email_rounded),
+                      prefixText: "@",
+                      filled: true,
+                      suffixIcon: _checkingUsername
+                          ? const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : IconButton(
+                              tooltip: "Check username",
+                              onPressed: _checkUsernameAvailability,
+                              icon: Icon(
+                                _usernameAvailable == true
+                                    ? Icons.check_circle_rounded
+                                    : _usernameAvailable == false
+                                    ? Icons.cancel_rounded
+                                    : Icons.search_rounded,
+                                color: _usernameAvailable == true
+                                    ? Colors.green
+                                    : _usernameAvailable == false
+                                    ? Colors.red
+                                    : Colors.grey,
+                              ),
+                            ),
+                      fillColor: Colors.white,
+                      counterText: "",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  if (_usernameAvailabilityMessage.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 12,
+                        top: 6,
+                        bottom: 4,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _usernameAvailabilityMessage,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: _usernameAvailable == true
+                                ? Colors.green
+                                : _usernameAvailable == false
+                                ? Colors.red
+                                : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  TextFormField(
                     controller: _bioController,
                     maxLines: 3,
                     decoration: InputDecoration(
@@ -1487,6 +1865,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildProfileStat(
+    String value,
+    String label, {
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -1624,24 +2038,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection('users').doc(uid).snapshots(),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Unable to load profile.\\n\\n${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text("Profile not found."));
           }
 
-          userData = snapshot.data!.data() as Map<String, dynamic>;
+          userData = snapshot.data!;
 
           if (!_isEditing) {
             _loadIntoControllers(userData!);
           }
 
           final myEarnings = GlobalState.creatorEarnings[uid] ?? 0.0;
+
+          final fullName = (userData!['fullName'] ?? '').toString().trim();
+          final username = (userData!['username'] ?? '').toString().trim();
+          final bio = (userData!['bio'] ?? '').toString().trim();
+          final college = (userData!['college'] ?? '').toString().trim();
+          final branch = (userData!['branch'] ?? '').toString().trim();
+          final year = (userData!['year'] ?? '').toString().trim();
+          final profilePhotoUrl = (userData!['profilePhotoUrl'] ?? '')
+              .toString()
+              .trim();
+
+          final followersCount = (userData!['followersCount'] ?? 0).toString();
+          final followingCount = (userData!['followingCount'] ?? 0).toString();
+          final reviewsCount = (userData!['reviewsCount'] ?? 0).toString();
+
+          final academicLine = [
+            if (college.isNotEmpty) college,
+            if (branch.isNotEmpty) branch,
+            if (year.isNotEmpty) year,
+          ].join(' • ');
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -1651,41 +2097,190 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Center(
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: const Color(
-                          0xFF2563EB,
-                        ).withValues(alpha: 0.1),
-                        child: Text(
-                          (userData!['fullName'] ?? '?').toString().isNotEmpty
-                              ? userData!['fullName'][0]
-                                    .toString()
-                                    .toUpperCase()
-                              : '?',
+                      Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          CircleAvatar(
+                            radius: 52,
+                            backgroundColor: const Color(0xFFEFF6FF),
+                            child: profilePhotoUrl.isNotEmpty
+                                ? ClipOval(
+                                    child: Image.network(
+                                      profilePhotoUrl,
+                                      width: 104,
+                                      height: 104,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Center(
+                                              child: Text(
+                                                fullName.isNotEmpty
+                                                    ? fullName[0].toUpperCase()
+                                                    : '?',
+                                                style: const TextStyle(
+                                                  fontSize: 34,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Color(0xFF2563EB),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    ),
+                                  )
+                                : Text(
+                                    fullName.isNotEmpty
+                                        ? fullName[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                          ),
+                          Material(
+                            color: Colors.white,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              onTap: _isUploadingProfilePhoto
+                                  ? null
+                                  : _changeProfilePhoto,
+                              customBorder: const CircleBorder(),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: _isUploadingProfilePhoto
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(8),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 18,
+                                        color: Color(0xFF2563EB),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        fullName.isEmpty ? 'Your Name' : fullName,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (username.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '@$username',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2563EB),
+                            color: Colors.grey,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        userData!['fullName'] ?? '',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                      ],
+                      if (academicLine.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          academicLine,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      Text(
-                        userData!['email'] ?? '',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+                      ],
+                      if (bio.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            bio,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 14, height: 1.4),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 22),
+
+                Row(
+                  children: [
+                    _buildProfileStat(
+                      followersCount,
+                      'Followers',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FollowersScreen(userId: uid),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildProfileStat(
+                      followingCount,
+                      'Following',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FollowingScreen(userId: uid),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildProfileStat(
+                      reviewsCount,
+                      'Reviews',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfileReviewsScreen(
+                              profileUid: uid,
+                              profileName: fullName,
+                              canReview: false,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showEditProfileDialog(uid),
+                    icon: const Icon(Icons.edit_rounded),
+                    label: const Text(
+                      'Edit Profile',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
 
                 const SizedBox(height: 24),
 
@@ -1703,7 +2298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   subtitle: const Text(
-                    "View your uploads and purchased resources",
+                    "Manage your saved, uploaded and purchased resources",
                     style: TextStyle(fontSize: 12),
                   ),
                   trailing: const Icon(
