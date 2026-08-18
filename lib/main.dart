@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,10 +24,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Google Mobile Ads before the application starts.
-  await MobileAds.instance.initialize();
-
+  // Do not block application startup on Google Mobile Ads.
   runApp(const SanSphereApp());
+
+  unawaited(MobileAds.instance.initialize());
 }
 
 class SanSphereApp extends StatelessWidget {
