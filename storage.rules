@@ -77,6 +77,30 @@ service firebase.storage {
 
 
     /*
+     * DISCOVER CONTENT
+     *
+     * Discover images are managed only by the SanSphere admin.
+     * The same admin identity used by Firestore Discover rules
+     * is enforced here as well.
+     *
+     * Storage path:
+     * discover/{contentType}/{documentId}.{extension}
+     */
+    match /discover/{contentType}/{fileName} {
+
+      allow read: if request.auth != null;
+
+      allow create, update: if request.auth != null
+        && request.auth.token.email == 'karanaskand222@gmail.com'
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if request.auth != null
+        && request.auth.token.email == 'karanaskand222@gmail.com';
+    }
+
+
+    /*
      * Everything else remains blocked.
      */
     match /{allPaths=**} {

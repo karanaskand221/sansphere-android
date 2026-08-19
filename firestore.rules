@@ -286,6 +286,73 @@ service cloud.firestore {
     }
 
 
+
+    /*
+     * DISCOVER CONTENT
+     *
+     * All authenticated users can READ published/active Discover content.
+     *
+     * Only the dedicated SanSphere admin account can CREATE,
+     * UPDATE or DELETE Discover content.
+     *
+     * Admin email:
+     * karanaskand222@gmail.com
+     */
+    function isDiscoverAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'karanaskand222@gmail.com';
+    }
+
+    match /discover_banners/{bannerId} {
+      allow read: if isDiscoverAdmin()
+        || (
+          request.auth != null
+          && resource.data.active == true
+        );
+
+      allow create, update, delete: if isDiscoverAdmin();
+    }
+
+    match /discover_announcements/{announcementId} {
+      allow read: if isDiscoverAdmin()
+        || (
+          request.auth != null
+          && resource.data.published == true
+        );
+
+      allow create, update, delete: if isDiscoverAdmin();
+    }
+
+    match /discover_opportunities/{opportunityId} {
+      allow read: if isDiscoverAdmin()
+        || (
+          request.auth != null
+          && resource.data.published == true
+        );
+
+      allow create, update, delete: if isDiscoverAdmin();
+    }
+
+    match /discover_featured/{featuredId} {
+      allow read: if isDiscoverAdmin()
+        || (
+          request.auth != null
+          && resource.data.published == true
+        );
+
+      allow create, update, delete: if isDiscoverAdmin();
+    }
+
+    match /discover_updates/{updateId} {
+      allow read: if isDiscoverAdmin()
+        || (
+          request.auth != null
+          && resource.data.published == true
+        );
+
+      allow create, update, delete: if isDiscoverAdmin();
+    }
+
     /*
      * DEFAULT DENY
      */

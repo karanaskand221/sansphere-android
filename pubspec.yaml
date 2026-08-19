@@ -48,6 +48,8 @@ dependencies:
   shared_preferences: ^2.5.5
   google_sign_in: 6.3.0
   image_picker: ^1.2.3
+  image_cropper_widget: ^1.0.7
+  crop_your_image: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -90,5 +92,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/images/sansphere_splash.png
 
   # To add assets to your application, add an assets section, like this:

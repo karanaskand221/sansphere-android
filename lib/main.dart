@@ -12,26 +12,32 @@ import 'screens/marketplace_feed.dart';
 import 'screens/upload_resource_screen.dart';
 import 'screens/resource_detail_screen.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/reels_screen.dart';
+import 'screens/discover_screen.dart';
 import 'screens/chat_list_screen.dart';
+import 'screens/wallet_screen.dart';
 import 'screens/profile_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_colors.dart';
 import 'widgets/ambient_background.dart';
 import 'services/auth_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final firebaseInitialization = Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(SanSphereApp(firebaseInitialization: firebaseInitialization));
 
   // Do not block application startup on Google Mobile Ads.
-  runApp(const SanSphereApp());
-
   unawaited(MobileAds.instance.initialize());
 }
 
 class SanSphereApp extends StatelessWidget {
-  const SanSphereApp({super.key});
+  final Future<FirebaseApp> firebaseInitialization;
+
+  const SanSphereApp({super.key, required this.firebaseInitialization});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +47,112 @@ class SanSphereApp extends StatelessWidget {
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
-      home: const AuthGate(),
+      home: FirebaseBootstrap(initialization: firebaseInitialization),
+    );
+  }
+}
+
+class FirebaseBootstrap extends StatefulWidget {
+  final Future<FirebaseApp> initialization;
+
+  const FirebaseBootstrap({super.key, required this.initialization});
+
+  @override
+  State<FirebaseBootstrap> createState() => _FirebaseBootstrapState();
+}
+
+class _FirebaseBootstrapState extends State<FirebaseBootstrap> {
+  late Future<FirebaseApp> _initialization;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialization = widget.initialization;
+  }
+
+  Future<void> _retry() async {
+    setState(() {
+      _initialization = Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<FirebaseApp>(
+      future: _initialization.timeout(const Duration(seconds: 15)),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SanSphereSplashScreen();
+        }
+
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.cloud_off,
+                      size: 56,
+                      color: Color(0xFFEF4444),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Unable to start SanSphere',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Firebase could not be initialized. '
+                      'Please check your internet connection and try again.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _retry,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return const AuthGate();
+      },
+    );
+  }
+}
+
+class SanSphereSplashScreen extends StatelessWidget {
+  const SanSphereSplashScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: Center(
+          child: SizedBox(
+            width: 230,
+            height: 230,
+            child: Image(
+              image: AssetImage('assets/images/sansphere_splash.png'),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -70,7 +181,13 @@ class _AuthGateState extends State<AuthGate> {
     }
 
     try {
-      final exists = await AuthService.instance.accountExistsByUid(user.uid);
+      debugPrint('AuthGate: checking SANSPHERE profile for ${user.uid}');
+
+      final exists = await AuthService.instance
+          .accountExistsByUid(user.uid)
+          .timeout(const Duration(seconds: 10));
+
+      debugPrint('AuthGate: profile exists = $exists');
 
       if (!exists) {
         // A Firebase Auth user without a SANSPHERE profile
@@ -85,6 +202,11 @@ class _AuthGateState extends State<AuthGate> {
         'AuthGate Firestore check failed: '
         '${e.code}: ${e.message}',
       );
+
+      await FirebaseAuth.instance.signOut();
+      return false;
+    } on TimeoutException catch (e) {
+      debugPrint('AuthGate Firestore check timed out: $e');
 
       await FirebaseAuth.instance.signOut();
       return false;
@@ -136,8 +258,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       MarketplaceFeedScreen(globalState: _globalState),
-      const ReelsScreen(),
+      DiscoverScreen(globalState: _globalState),
       const ChatListScreen(),
+      const WalletScreen(),
       ProfileScreen(globalState: _globalState),
     ];
 
@@ -195,14 +318,19 @@ class _FloatingGlassNavigation extends StatelessWidget {
                 label: 'Vault',
               ),
               NavigationDestination(
-                icon: Icon(Icons.play_circle_outline),
-                selectedIcon: Icon(Icons.play_circle),
-                label: 'Reels',
+                icon: Icon(Icons.auto_awesome_outlined),
+                selectedIcon: Icon(Icons.auto_awesome),
+                label: 'Discover',
               ),
               NavigationDestination(
                 icon: Icon(Icons.chat_bubble_outline),
                 selectedIcon: Icon(Icons.chat_bubble),
-                label: 'Chats',
+                label: 'Chat',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                selectedIcon: Icon(Icons.account_balance_wallet),
+                label: 'Wallet',
               ),
               NavigationDestination(
                 icon: Icon(Icons.person_outline),

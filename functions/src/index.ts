@@ -2468,3 +2468,220 @@ export const getVisibleProfileResources = onCall(async (request) => {
     visible: true,
   };
 });
+
+
+/**
+ * ADMIN — Delete an academic Vault resource permanently.
+ *
+ * This operation is restricted to the dedicated SanSphere admin.
+ *
+ * Deletes:
+ * 1. Firebase Storage file referenced by storagePath.
+ * 2. All purchases associated with the resource.
+ * 3. Ratings/reviews under the resource.
+ * 4. Saved-resource references.
+ * 5. The SanVault academic_vault document.
+ *
+ * Existing SanCoin transactions are NOT reversed.
+ */
+export const adminDeleteAcademicResource = onCall(async (request) => {
+  const uid = requireAuth(request);
+
+  const adminEmail = String(
+    request.auth?.token?.email ?? "",
+  ).trim().toLowerCase();
+
+  if (adminEmail !== "karanaskand222@gmail.com") {
+    throw new HttpsError(
+      "permission-denied",
+      "Only the SanSphere admin can delete Vault resources.",
+    );
+  }
+
+  const resourceId = String(
+    request.data?.resourceId ?? "",
+  ).trim();
+
+  if (!resourceId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "resourceId required.",
+    );
+  }
+
+  const resourceRef = vaultDb
+    .collection("academic_vault")
+    .doc(resourceId);
+
+  const resourceSnap = await resourceRef.get();
+
+  if (!resourceSnap.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Vault resource not found.",
+    );
+  }
+
+  const resource = resourceSnap.data() ?? {};
+
+  const storagePath = String(
+    resource.storagePath ?? "",
+  ).trim();
+
+  /*
+   * ----------------------------------------------------------
+   * PRE-FLIGHT
+   * ----------------------------------------------------------
+   *
+   * Read every dependency BEFORE deleting anything.
+   *
+   * This is important because a failed query must never happen
+   * after the Storage file or Firestore records have already
+   * been deleted.
+   */
+
+  let purchasesSnap;
+  let ratingsSnap;
+  let savedSnap;
+
+  try {
+    purchasesSnap = await userDb
+      .collection("purchases")
+      .where("resourceId", "==", resourceId)
+      .get();
+
+    ratingsSnap = await resourceRef
+      .collection("ratings")
+      .get();
+
+    savedSnap = await userDb
+      .collectionGroup("saved_resources")
+      .where("resourceId", "==", resourceId)
+      .get();
+  } catch (error) {
+    console.error(
+      "ADMIN VAULT DELETE PREFLIGHT FAILED",
+      {
+        uid,
+        resourceId,
+        error,
+      },
+    );
+
+    throw new HttpsError(
+      "internal",
+      "Could not prepare Vault resource for deletion.",
+    );
+  }
+
+  const purchaseDocs = purchasesSnap.docs;
+  const ratingDocs = ratingsSnap.docs;
+  const savedDocs = savedSnap.docs;
+
+  /*
+   * ----------------------------------------------------------
+   * 1. DELETE STORAGE FILE
+   * ----------------------------------------------------------
+   *
+   * All required Firestore queries have already succeeded.
+   */
+  if (storagePath) {
+    try {
+      await bucket
+        .file(storagePath)
+        .delete({
+          ignoreNotFound: true,
+        });
+    } catch (error) {
+      console.error(
+        "ADMIN VAULT STORAGE DELETE FAILED",
+        {
+          uid,
+          resourceId,
+          storagePath,
+          error,
+        },
+      );
+
+      throw new HttpsError(
+        "internal",
+        "Could not delete the Vault file from Storage.",
+      );
+    }
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * 2. DELETE PURCHASE RECORDS
+   * ----------------------------------------------------------
+   */
+  for (let i = 0; i < purchaseDocs.length; i += 450) {
+    const chunk = purchaseDocs.slice(i, i + 450);
+    const batch = userDb.batch();
+
+    for (const purchaseDoc of chunk) {
+      batch.delete(purchaseDoc.ref);
+    }
+
+    await batch.commit();
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * 3. DELETE RATINGS / REVIEWS
+   * ----------------------------------------------------------
+   */
+  for (let i = 0; i < ratingDocs.length; i += 450) {
+    const chunk = ratingDocs.slice(i, i + 450);
+    const batch = vaultDb.batch();
+
+    for (const ratingDoc of chunk) {
+      batch.delete(ratingDoc.ref);
+    }
+
+    await batch.commit();
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * 4. DELETE SAVED-RESOURCE REFERENCES
+   * ----------------------------------------------------------
+   */
+  for (let i = 0; i < savedDocs.length; i += 450) {
+    const chunk = savedDocs.slice(i, i + 450);
+    const batch = userDb.batch();
+
+    for (const savedDoc of chunk) {
+      batch.delete(savedDoc.ref);
+    }
+
+    await batch.commit();
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * 5. DELETE THE SANVAULT RESOURCE DOCUMENT
+   * ----------------------------------------------------------
+   */
+  await resourceRef.delete();
+
+  console.log(
+    "ADMIN VAULT RESOURCE DELETED",
+    {
+      adminUid: uid,
+      resourceId,
+      storagePath,
+      deletedPurchases: purchaseDocs.length,
+      deletedRatings: ratingDocs.length,
+      deletedSavedReferences: savedDocs.length,
+    },
+  );
+
+  return {
+    success: true,
+    resourceId,
+    deletedPurchases: purchaseDocs.length,
+    deletedRatings: ratingDocs.length,
+    deletedSavedReferences: savedDocs.length,
+  };
+});
