@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
@@ -61,21 +62,22 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final email = _emailController.text.trim().toLowerCase();
-    final password = _passwordController.text;
-
     if (_isLoading) {
       return;
     }
+
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+
+    FocusScope.of(context).unfocus();
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Authenticate with Firebase Auth first.
-      // Do NOT query Firestore before authentication because
-      // Firestore rules require request.auth != null.
+      debugPrint('LOGIN: starting Firebase authentication for $email');
+
       final result = await _authService.signInWithEmail(
         email: email,
         password: password,
@@ -83,16 +85,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = result.user;
 
+      debugPrint('LOGIN SUCCESS: uid=${user?.uid}, email=${user?.email}');
+
       if (user == null) {
         throw FirebaseAuthException(
           code: 'login-failed',
-          message: 'Unable to sign in.',
+          message: 'Firebase authentication returned no user.',
         );
       }
 
-      // Now the user is authenticated, so reading users/{uid}
-      // is permitted by the Firestore rules.
+      debugPrint('LOGIN: Firebase authentication succeeded: ${user.uid}');
+      debugPrint('LOGIN: checking SANSPHERE profile...');
+
       final profileExists = await _authService.accountExistsByUid(user.uid);
+
+      debugPrint('LOGIN: SANSPHERE profile exists: $profileExists');
 
       if (!profileExists) {
         await FirebaseAuth.instance.signOut();
@@ -105,45 +112,143 @@ class _LoginScreenState extends State<LoginScreen> {
 
         await _showAccountNotFoundDialog(
           message:
-              'Your Firebase account exists, but no SANSPHERE profile '
-              'was found. Please create your SANSPHERE account first.',
+              'Your Firebase account is valid, but your SANSPHERE profile '
+              'does not exist yet. Please create your SANSPHERE account first.',
         );
 
         return;
       }
+
+      if (!mounted) return;
+
+      debugPrint('LOGIN: authentication and profile verification complete.');
+
+      setState(() {
+        _isLoading = false;
+      });
 
       _openApp();
     } on FirebaseAuthException catch (e) {
+      debugPrint('LOGIN AUTH ERROR');
+      debugPrint('  code: ${e.code}');
+      debugPrint('  message: ${e.message}');
+
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
       });
 
-      if (e.code == 'user-not-found' ||
-          e.code == 'invalid-credential' ||
-          e.code == 'invalid-login-credentials') {
-        await _showAccountNotFoundDialog(
-          message: 'No SANSPHERE account was found for this email address.',
+      switch (e.code) {
+        case 'user-not-found':
+        case 'invalid-credential':
+        case 'invalid-login-credentials':
+          await _showAccountNotFoundDialog(
+            message:
+                'The email or password is incorrect, or this account '
+                'does not exist.',
+          );
+          return;
+
+        case 'wrong-password':
+          _showError('Incorrect password. Please try again.');
+          return;
+
+        case 'invalid-email':
+          _showError('Please enter a valid email address.');
+          return;
+
+        case 'user-disabled':
+          _showError(
+            'This account has been disabled. Please contact SANSPHERE support.',
+          );
+          return;
+
+        case 'too-many-requests':
+          _showError(
+            'Too many login attempts. Please wait a few minutes and try again.',
+          );
+          return;
+
+        case 'network-request-failed':
+          _showError(
+            'Network connection failed. Please check your internet connection '
+            'and try again.',
+          );
+          return;
+
+        case 'login-timeout-or-network-error':
+          _showError(
+            'Firebase sign-in is taking too long. Please check your internet '
+            'connection and try again.',
+          );
+          return;
+
+        default:
+          _showError(
+            'Firebase login failed (${e.code}). '
+            '${e.message ?? 'Please try again.'}',
+          );
+          return;
+      }
+    } on FirebaseException catch (e) {
+      debugPrint('LOGIN FIRESTORE/PROFILE ERROR');
+      debugPrint('  plugin: ${e.plugin}');
+      debugPrint('  code: ${e.code}');
+      debugPrint('  message: ${e.message}');
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (e.code == 'permission-denied') {
+        _showError(
+          'Login succeeded, but SANSPHERE could not access your profile. '
+          'Please check the Firestore permissions.',
         );
         return;
       }
 
-      _showError(_friendlyAuthError(e));
-    } catch (e) {
+      if (e.code == 'unavailable' ||
+          e.code == 'deadline-exceeded' ||
+          e.code == 'profile-check-failed') {
+        _showError(
+          'Login succeeded, but your SANSPHERE profile could not be verified. '
+          'Please check your internet connection and try again.',
+        );
+        return;
+      }
+
+      _showError(
+        'Login succeeded, but profile verification failed '
+        '(${e.code}).',
+      );
+    } on TimeoutException catch (e) {
+      debugPrint('LOGIN TIMEOUT: $e');
+
       if (!mounted) return;
 
       setState(() {
         _isLoading = false;
       });
 
-      _showError('Unable to sign in. Please check your details and try again.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      _showError(
+        'Login is taking too long. Please check your internet connection '
+        'and try again.',
+      );
+    } catch (e, stackTrace) {
+      debugPrint('LOGIN UNEXPECTED ERROR: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _showError('Something went wrong while signing in. Please try again.');
     }
   }
 

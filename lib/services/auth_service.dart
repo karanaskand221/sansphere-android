@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -105,29 +106,91 @@ class AuthService {
   Future<bool> accountExistsByUid(String uid) async {
     final currentUid = _auth.currentUser?.uid;
 
+    debugPrint('PROFILE CHECK: authUid=$currentUid requestedUid=$uid');
+
     if (currentUid == null || currentUid.isEmpty) {
-      return false;
+      debugPrint('PROFILE CHECK FAILED: Firebase Auth has no current user.');
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'unauthenticated',
+        message: 'Firebase Auth user is missing after successful login.',
+      );
     }
 
     final requestedUid = uid.trim();
 
     if (requestedUid.isEmpty || requestedUid != currentUid) {
-      return false;
+      debugPrint(
+        'PROFILE CHECK FAILED: UID mismatch. '
+        'authUid=$currentUid requestedUid=$requestedUid',
+      );
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        code: 'uid-mismatch',
+        message: 'Authenticated user ID does not match the requested profile.',
+      );
     }
 
-    final doc = await _firestore.collection('users').doc(currentUid).get();
+    try {
+      debugPrint(
+        'PROFILE CHECK: reading users/$currentUid '
+        'from Firestore database "sansphere"...',
+      );
 
-    return doc.exists;
+      final doc = await _firestore
+          .collection('users')
+          .doc(currentUid)
+          .get()
+          .timeout(const Duration(seconds: 8));
+
+      debugPrint(
+        'PROFILE CHECK RESULT: exists=${doc.exists} '
+        'path=${doc.reference.path}',
+      );
+
+      if (doc.exists) {
+        debugPrint('PROFILE CHECK SUCCESS: profile found for $currentUid.');
+      } else {
+        debugPrint('PROFILE CHECK FAILED: users/$currentUid does not exist.');
+      }
+
+      return doc.exists;
+    } on FirebaseException catch (e) {
+      debugPrint(
+        'PROFILE CHECK FIRESTORE ERROR: '
+        'code=${e.code} message=${e.message}',
+      );
+      rethrow;
+    } on TimeoutException {
+      debugPrint(
+        'PROFILE CHECK TIMEOUT: Firestore did not respond within 8 seconds.',
+      );
+      rethrow;
+    } catch (e) {
+      debugPrint(
+        'PROFILE CHECK UNKNOWN ERROR: '
+        'type=${e.runtimeType} error=$e',
+      );
+      rethrow;
+    }
   }
 
   Future<UserCredential> signInWithEmail({
     required String email,
     required String password,
-  }) {
-    return _auth.signInWithEmailAndPassword(
-      email: email.trim(),
-      password: password,
-    );
+  }) async {
+    try {
+      return await _auth
+          .signInWithEmailAndPassword(email: email.trim(), password: password)
+          .timeout(const Duration(seconds: 15));
+    } on FirebaseAuthException {
+      rethrow;
+    } catch (e) {
+      throw FirebaseAuthException(
+        code: 'login-timeout-or-network-error',
+        message: 'Firebase sign-in could not complete: $e',
+      );
+    }
   }
 
   Future<UserCredential> createEmailAccount({

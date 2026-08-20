@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../global_state.dart';
 import '../models/academic_resource.dart';
 import '../services/sancoin_service.dart';
 import '../services/resource_rating_service.dart';
 import '../services/saved_resource_service.dart';
+import '../services/secure_document_access_service.dart';
+import 'protected_document_viewer_screen.dart';
 import 'chat_list_screen.dart';
 import 'public_profile_screen.dart';
 
@@ -694,6 +694,57 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     return result == true;
   }
 
+  Future<void> _previewFile() async {
+    if (_opening) return;
+
+    if (_resourceId.isEmpty) {
+      _showError('This resource has an invalid document ID.');
+      return;
+    }
+
+    if (_purchased) {
+      await _openFile();
+      return;
+    }
+
+    setState(() {
+      _opening = true;
+    });
+
+    try {
+      final documentBytes = await SecureDocumentAccessService.instance
+          .fetchPreviewDocument(_resourceId);
+
+      if (!mounted) return;
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProtectedDocumentViewerScreen(
+            documentBytes: documentBytes,
+            title: widget.resource.title.trim().isEmpty
+                ? 'Preview'
+                : '${widget.resource.title.trim()} — Preview',
+            previewOnly: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Secure preview open failed: $e');
+
+      if (mounted) {
+        _showError(
+          'Preview is not available yet. Please try again shortly.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _opening = false;
+        });
+      }
+    }
+  }
+
   Future<void> _openFile() async {
     if (_opening) return;
 
@@ -703,7 +754,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     }
 
     if (!_purchased) {
-      _showError('Purchase this resource before downloading it.');
+      _showError('Purchase this resource before opening it.');
       return;
     }
 
@@ -712,36 +763,23 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     });
 
     try {
-      /*
-       * IMPORTANT:
-       *
-       * Do NOT use resource.fileUrl here.
-       *
-       * The Storage rules intentionally deny direct reads.
-       * The Cloud Function verifies permanent ownership and
-       * returns a short-lived signed URL.
-       */
-      final signedUrl = await _sanCoinService.getPurchasedFileUrl(_resourceId);
+      final documentBytes = await SecureDocumentAccessService.instance
+          .fetchPurchasedDocument(_resourceId);
 
-      final uri = Uri.tryParse(signedUrl);
+      if (!mounted) return;
 
-      if (uri == null || !uri.hasScheme) {
-        throw Exception('Invalid secure download URL.');
-      }
-
-      bool launched;
-
-      if (kIsWeb) {
-        launched = await launchUrl(uri, webOnlyWindowName: '_blank');
-      } else {
-        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-
-      if (!launched) {
-        throw Exception('Could not open the purchased file.');
-      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProtectedDocumentViewerScreen(
+            documentBytes: documentBytes,
+            title: widget.resource.title.trim().isEmpty
+                ? 'Protected Document'
+                : widget.resource.title.trim(),
+          ),
+        ),
+      );
     } catch (e) {
-      debugPrint('Secure file open failed: $e');
+      debugPrint('Secure document open failed: $e');
 
       if (mounted) {
         _showError(_friendlyDownloadError(e));
@@ -1126,7 +1164,10 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               : const Icon(Icons.download_rounded),
           label: Text(
             _opening ? 'Opening...' : 'Open / Download File',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2563EB),
@@ -1139,34 +1180,73 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       );
     }
 
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton.icon(
-        onPressed: _processingPurchase ? null : _purchaseResource,
-        icon: _processingPurchase
-            ? const SizedBox(
-                height: 21,
-                width: 21,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(Icons.shopping_cart_rounded),
-        label: Text(
-          _processingPurchase ? 'Purchasing...' : 'Buy for $_price SanCoins',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF2563EB),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.grey,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton.icon(
+            onPressed: _opening ? null : _previewFile,
+            icon: _opening
+                ? const SizedBox(
+                    height: 21,
+                    width: 21,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.visibility_rounded),
+            label: Text(
+              _opening ? 'Opening Preview...' : 'Preview PDF',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF2563EB),
+              side: const BorderSide(
+                color: Color(0xFF2563EB),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton.icon(
+            onPressed: _processingPurchase ? null : _purchaseResource,
+            icon: _processingPurchase
+                ? const SizedBox(
+                    height: 21,
+                    width: 21,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.shopping_cart_rounded),
+            label: Text(
+              _processingPurchase
+                  ? 'Purchasing...'
+                  : 'Buy for $_price SanCoins',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
