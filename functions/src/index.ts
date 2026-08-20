@@ -1996,14 +1996,55 @@ export const getSocialUsers = onCall(async (request) => {
 });
 
 /**
+ * Return privacy-safe users that can be selected when
+ * sharing a resource in SANSPHERE Chat.
+ *
+ * The Flutter client must never query users/{uid} directly
+ * to build the chat recipient list.
+ */
+export const getChatUsers = onCall(async (request) => {
+  const requesterUid = requireAuth(request);
+
+  const snapshot = await userDb
+    .collection("users")
+    .limit(100)
+    .get();
+
+  const users = snapshot.docs
+    .filter((doc) => {
+      const data = doc.data();
+
+      return (
+        doc.id !== requesterUid &&
+        data.allowMessages !== false
+      );
+    })
+    .map((doc) => {
+      const data = doc.data();
+
+      const fullName = String(data.fullName ?? "Sansphere User").trim() ||
+        "Sansphere User";
+
+      const username = String(data.username ?? "").trim();
+
+      const profilePhotoUrl = String(data.profilePhotoUrl ?? "").trim();
+
+      return {
+        uid: doc.id,
+        fullName,
+        username,
+        profilePhotoUrl,
+      };
+    });
+
+  return {
+    success: true,
+    users,
+  };
+});
+
+/**
  * Return privacy-safe information about a chat peer.
- *
- * The peer's phone number is returned only when:
- * 1. the requester is authenticated,
- * 2. the requester and peer have an existing chat, and
- * 3. the peer explicitly enabled showPhoneNumber.
- *
- * The client never directly reads users/{peerUid}.
  */
 export const getChatPeerInfo = onCall(async (request) => {
   const requesterUid = requireAuth(request);

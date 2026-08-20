@@ -259,7 +259,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final List<Widget> pages = [
       MarketplaceFeedScreen(globalState: _globalState),
       DiscoverScreen(globalState: _globalState),
-      const ChatListScreen(),
+      ChatListScreen(globalState: _globalState),
       const WalletScreen(),
       ProfileScreen(globalState: _globalState),
     ];

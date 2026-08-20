@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../global_state.dart';
+
 import '../services/social_profile_service.dart';
 import 'public_profile_resources_screen.dart';
 import 'profile_reviews_screen.dart';
@@ -8,8 +10,13 @@ import 'chat_list_screen.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
+  final GlobalState globalState;
 
-  const PublicProfileScreen({super.key, required this.userId});
+  const PublicProfileScreen({
+    super.key,
+    required this.userId,
+    required this.globalState,
+  });
 
   @override
   State<PublicProfileScreen> createState() => _PublicProfileScreenState();
@@ -164,6 +171,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             peerName: peerName.isNotEmpty ? peerName : 'Sansphere User',
             docTitle: 'Profile',
             docId: 'profile_${widget.userId}',
+            globalState: widget.globalState,
           );
         },
         icon: const Icon(Icons.chat_bubble_outline_rounded),

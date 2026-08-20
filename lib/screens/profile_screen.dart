@@ -2202,7 +2202,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FollowersScreen(userId: uid),
+                            builder: (_) => FollowersScreen(
+                              userId: uid,
+                              globalState: widget.globalState,
+                            ),
                           ),
                         );
                       },
@@ -2214,7 +2217,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => FollowingScreen(userId: uid),
+                            builder: (_) => FollowingScreen(
+                              userId: uid,
+                              globalState: widget.globalState,
+                            ),
                           ),
                         );
                       },

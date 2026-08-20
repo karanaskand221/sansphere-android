@@ -2,13 +2,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../global_state.dart';
+
 import 'public_profile_screen.dart';
 import '../services/social_profile_service.dart';
 
 class FollowersScreen extends StatelessWidget {
   final String userId;
+  final GlobalState globalState;
 
-  const FollowersScreen({super.key, required this.userId});
+  const FollowersScreen({
+    super.key,
+    required this.userId,
+    required this.globalState,
+  });
 
   FirebaseFirestore get _firestore => FirebaseFirestore.instanceFor(
     app: FirebaseAuth.instance.app,
@@ -94,6 +101,7 @@ class FollowersScreen extends StatelessWidget {
                 name: _displayName(data),
                 username: (data['username'] ?? '').toString().trim(),
                 photoUrl: (data['profilePhotoUrl'] ?? '').toString().trim(),
+                globalState: globalState,
               );
             },
           );
@@ -113,12 +121,14 @@ class _FollowerUserTile extends StatelessWidget {
   final String name;
   final String username;
   final String photoUrl;
+  final GlobalState globalState;
 
   const _FollowerUserTile({
     required this.uid,
     required this.name,
     required this.username,
     required this.photoUrl,
+    required this.globalState,
   });
 
   @override
@@ -131,7 +141,12 @@ class _FollowerUserTile extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: uid)),
+            MaterialPageRoute(
+              builder: (_) => PublicProfileScreen(
+                userId: uid,
+                globalState: globalState,
+              ),
+            ),
           );
         },
         child: Padding(

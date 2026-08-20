@@ -4,6 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../global_state.dart';
+import '../models/academic_resource.dart';
+import 'resource_detail_screen.dart';
+
+
 final _chatFirestore = FirebaseFirestore.instanceFor(
   app: Firebase.app(),
   databaseId: 'sansphere',
@@ -20,6 +25,7 @@ Future<void> startChatWithUser(
   required String peerName,
   String? docTitle,
   String? docId,
+  required GlobalState globalState,
 }) async {
   final me = FirebaseAuth.instance.currentUser;
 
@@ -79,6 +85,7 @@ Future<void> startChatWithUser(
           chatId: chatId,
           peerUid: peerUid,
           peerName: peerName,
+          globalState: globalState,
         ),
       ),
     );
@@ -98,7 +105,12 @@ Future<void> startChatWithUser(
 }
 
 class ChatListScreen extends StatelessWidget {
-  const ChatListScreen({super.key});
+  final GlobalState globalState;
+
+  const ChatListScreen({
+    super.key,
+    required this.globalState,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +193,7 @@ class ChatListScreen extends StatelessWidget {
                       chatId: chats[idx].id,
                       peerUid: peerUid,
                       peerName: peerName,
+                      globalState: globalState,
                     ),
                   ),
                 ),
@@ -197,11 +210,13 @@ class ChatConversationRoom extends StatefulWidget {
   final String chatId;
   final String peerUid;
   final String peerName;
+  final GlobalState globalState;
   const ChatConversationRoom({
     super.key,
     required this.chatId,
     required this.peerUid,
     required this.peerName,
+    required this.globalState,
   });
 
   @override
@@ -238,6 +253,258 @@ class _ChatConversationRoomState extends State<ChatConversationRoom> {
       'lastMessage': text,
       'lastMessageAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+
+  Widget _buildResourceMessage(
+    BuildContext context,
+    Map<String, dynamic> data,
+    bool isMe,
+  ) {
+    final resourceId = data['resourceId']?.toString().trim() ?? '';
+    final title = data['resourceTitle']?.toString().trim() ?? '';
+    final subject = data['resourceSubject']?.toString().trim() ?? '';
+    final uploader = data['resourceUploaderName']?.toString().trim() ?? '';
+    final priceValue = data['resourcePrice'];
+
+    final price = priceValue is num
+        ? priceValue.toDouble()
+        : double.tryParse(priceValue?.toString() ?? '') ?? 0;
+
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.78,
+      margin: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isMe ? const Color(0xFFEFF6FF) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isMe
+              ? const Color(0xFFBFDBFE)
+              : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 8,
+            offset: Offset(0, 2),
+            color: Color(0x10000000),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(width: 11),
+              const Expanded(
+                child: Text(
+                  'Shared Resource',
+                  style: TextStyle(
+                    color: Color(0xFF2563EB),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            title.isNotEmpty ? title : 'Academic Resource',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          if (subject.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              subject,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+              ),
+            ),
+          ],
+
+          if (uploader.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Uploaded by $uploader',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontSize: 12,
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              Icon(
+                price > 0
+                    ? Icons.monetization_on_rounded
+                    : Icons.card_giftcard_rounded,
+                size: 17,
+                color: const Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                price > 0
+                    ? '${price.toStringAsFixed(0)} SanCoins'
+                    : 'Free',
+                style: const TextStyle(
+                  color: Color(0xFF2563EB),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: resourceId.isEmpty
+                  ? null
+                  : () => _openSharedResource(
+                        context,
+                        resourceId,
+                      ),
+              icon: const Icon(
+                Icons.open_in_new_rounded,
+                size: 17,
+              ),
+              label: const Text('View Resource'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF2563EB),
+                side: const BorderSide(
+                  color: Color(0xFFBFDBFE),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openSharedResource(
+    BuildContext context,
+    String resourceId,
+  ) async {
+    try {
+      final cleanId = resourceId.trim();
+
+      if (cleanId.isEmpty) {
+        if (!context.mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This resource cannot be opened.'),
+          ),
+        );
+        return;
+      }
+
+      AcademicResource? resource;
+
+      // First use the resources already loaded by the application's
+      // shared GlobalState.
+      for (final item in widget.globalState.resources) {
+        if (item.id.trim() == cleanId ||
+            item.customDocId.trim() == cleanId) {
+          resource = item;
+          break;
+        }
+      }
+
+      // Fallback to the real Academic Vault database.
+      if (resource == null) {
+        final vaultFirestore = FirebaseFirestore.instanceFor(
+          app: Firebase.app(),
+          databaseId: 'sanvault',
+        );
+
+        final doc = await vaultFirestore
+            .collection('academic_vault')
+            .doc(cleanId)
+            .get();
+
+        if (doc.exists && doc.data() != null) {
+          resource = AcademicResource.fromMap(
+            doc.data()!,
+            doc.id,
+          );
+        }
+      }
+
+      if (!context.mounted) return;
+
+      if (resource == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This resource is no longer available.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResourceDetailScreen(
+            resource: resource!,
+            globalState: widget.globalState,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint(
+        'Could not open shared resource: $e',
+      );
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not open this resource.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _showPeerInfo() async {
@@ -352,39 +619,54 @@ class _ChatConversationRoomState extends State<ChatConversationRoom> {
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, i) {
-                    final data = messages[i].data() as Map<String, dynamic>;
+                    final data =
+                        messages[i].data() as Map<String, dynamic>;
                     final isMe = data['senderUid'] == myUid;
+                    final isResource = data['type'] == 'resource';
+
                     return Align(
                       alignment: isMe
                           ? Alignment.centerRight
                           : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.75,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isMe ? Colors.blueAccent : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12).copyWith(
-                            bottomRight: isMe
-                                ? const Radius.circular(0)
-                                : const Radius.circular(12),
-                            bottomLeft: !isMe
-                                ? const Radius.circular(0)
-                                : const Radius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          data['text'] ?? '',
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                      ),
+                      child: isResource
+                          ? _buildResourceMessage(
+                              context,
+                              data,
+                              isMe,
+                            )
+                          : Container(
+                              margin:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.of(context).size.width * 0.75,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isMe
+                                    ? Colors.blueAccent
+                                    : Colors.grey[200],
+                                borderRadius:
+                                    BorderRadius.circular(12).copyWith(
+                                  bottomRight: isMe
+                                      ? const Radius.circular(0)
+                                      : const Radius.circular(12),
+                                  bottomLeft: !isMe
+                                      ? const Radius.circular(0)
+                                      : const Radius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                data['text']?.toString() ?? '',
+                                style: TextStyle(
+                                  color:
+                                      isMe ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ),
                     );
                   },
                 );

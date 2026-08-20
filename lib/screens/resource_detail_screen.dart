@@ -1,4 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../global_state.dart';
@@ -46,6 +49,13 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? _ratingsStream;
 
+  String _uploaderPhotoUrl = '';
+
+  final FirebaseFirestore _chatFirestore = FirebaseFirestore.instanceFor(
+    app: Firebase.app(),
+    databaseId: 'sansphere',
+  );
+
   @override
   void initState() {
     _loadSavedState();
@@ -56,6 +66,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     }
 
     _checkPurchase();
+    _loadUploaderProfile();
   }
 
   @override
@@ -141,6 +152,326 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           _savingResource = false;
         });
       }
+    }
+  }
+
+
+  Future<void> _loadUploaderProfile() async {
+    final uploaderUid = widget.resource.uploaderId.trim().isNotEmpty
+        ? widget.resource.uploaderId.trim()
+        : widget.resource.authorUid.trim();
+
+    if (uploaderUid.isEmpty) return;
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(
+        app: Firebase.app(),
+        region: 'us-central1',
+      );
+
+      final result = await functions.httpsCallable('getPublicProfile').call(
+        <String, dynamic>{
+          'targetUid': uploaderUid,
+        },
+      );
+
+      final raw = result.data;
+
+      if (!mounted || raw is! Map) return;
+
+      final data = Map<String, dynamic>.from(raw);
+
+      setState(() {
+        _uploaderPhotoUrl =
+            (data['profilePhotoUrl'] ?? '').toString().trim();
+      });
+    } catch (e) {
+      debugPrint('Could not load uploader public profile: $e');
+    }
+  }
+
+
+  String _chatIdForUsers(String uid1, String uid2) {
+    final ids = <String>[uid1.trim(), uid2.trim()]
+      ..sort();
+    return '${ids[0]}_${ids[1]}';
+  }
+
+  Future<void> _shareResourceInChat() async {
+    final me = FirebaseAuth.instance.currentUser;
+
+    if (me == null) {
+      _showError('Please log in first.');
+      return;
+    }
+
+    if (_resourceId.isEmpty) {
+      _showError('This resource cannot be shared yet.');
+      return;
+    }
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(
+        app: FirebaseAuth.instance.app,
+        region: 'us-central1',
+      );
+
+      final result = await functions
+          .httpsCallable('getChatUsers')
+          .call();
+
+      final rawUsers = result.data is Map
+          ? (result.data['users'] as List? ?? const [])
+          : const [];
+
+      final users = rawUsers
+          .whereType<Map>()
+          .map((item) {
+            final data = Map<String, dynamic>.from(item);
+
+            final uid =
+                (data['uid'] ?? '').toString().trim();
+
+            final fullName =
+                (data['fullName'] ?? '').toString().trim();
+
+            final username =
+                (data['username'] ?? '').toString().trim();
+
+            final profilePhotoUrl =
+                (data['profilePhotoUrl'] ?? '').toString().trim();
+
+            final displayName = fullName.isNotEmpty
+                ? fullName
+                : username.isNotEmpty
+                    ? username
+                    : 'Sansphere User';
+
+            return <String, String>{
+              'uid': uid,
+              'name': displayName,
+              'username': username,
+              'photo': profilePhotoUrl,
+            };
+          })
+          .where((user) =>
+              user['uid']!.isNotEmpty &&
+              user['uid'] != me.uid)
+          .toList();
+
+      users.sort(
+        (a, b) => a['name']!.toLowerCase().compareTo(
+              b['name']!.toLowerCase(),
+            ),
+      );
+
+      if (!mounted) return;
+
+      if (users.isEmpty) {
+        _showError('No other SANSPHERE users are available.');
+        return;
+      }
+
+      final selected = await showModalBottomSheet<Map<String, String>>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheetContext) {
+          return SafeArea(
+            child: SizedBox(
+              height: MediaQuery.of(sheetContext).size.height * 0.72,
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Share in SANSPHERE Chat',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                      ),
+                      itemCount: users.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1),
+                      itemBuilder: (_, index) {
+                        final user = users[index];
+
+                        final name = user['name'] ?? 'Sansphere User';
+                        final username = user['username'] ?? '';
+                        final photo = user['photo'] ?? '';
+
+                        final initial = name.isNotEmpty
+                            ? name[0].toUpperCase()
+                            : '?';
+
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 4,
+                          ),
+                          leading: CircleAvatar(
+                            radius: 23,
+                            backgroundColor:
+                                const Color(0xFFEFF6FF),
+                            backgroundImage: photo.isNotEmpty
+                                ? NetworkImage(photo)
+                                : null,
+                            child: photo.isEmpty
+                                ? Text(
+                                    initial,
+                                    style: const TextStyle(
+                                      color: Color(0xFF2563EB),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          title: Text(
+                            name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: username.isNotEmpty
+                              ? Text('@$username')
+                              : null,
+                          trailing: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          onTap: () {
+                            Navigator.pop(sheetContext, user);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      if (!mounted || selected == null) return;
+
+      final peerUid = selected['uid']!.trim();
+      final peerName =
+          selected['name']!.trim().isEmpty
+              ? 'Sansphere User'
+              : selected['name']!.trim();
+
+      if (peerUid.isEmpty || peerUid == me.uid) {
+        _showError('Invalid user selected.');
+        return;
+      }
+
+      final chatId = _chatIdForUsers(me.uid, peerUid);
+      final chatRef = _chatFirestore
+          .collection('chats')
+          .doc(chatId);
+
+      String myName = 'Student';
+
+      try {
+        final myDoc = await _chatFirestore
+            .collection('users')
+            .doc(me.uid)
+            .get();
+
+        final myData = myDoc.data();
+
+        if (myData != null) {
+          final fullName =
+              (myData['fullName'] ?? '').toString().trim();
+
+          final username =
+              (myData['username'] ?? '').toString().trim();
+
+          if (fullName.isNotEmpty) {
+            myName = fullName;
+          } else if (username.isNotEmpty) {
+            myName = username;
+          }
+        }
+      } catch (e) {
+        debugPrint(
+          'Could not load current user name for sharing: $e',
+        );
+      }
+
+      final resourceTitle =
+          widget.resource.title.trim().isEmpty
+              ? 'Shared a resource'
+              : 'Shared: ${widget.resource.title.trim()}';
+
+      await chatRef.set(
+        {
+          'participants': [me.uid, peerUid],
+          'participantNames': {
+            me.uid: myName,
+            peerUid: peerName,
+          },
+          'lastMessage': resourceTitle,
+          'lastMessageAt': FieldValue.serverTimestamp(),
+          'lastSharedResourceId': _resourceId,
+        },
+        SetOptions(merge: true),
+      );
+
+      await chatRef.collection('messages').add(
+        {
+          'type': 'resource',
+          'text': resourceTitle,
+          'senderUid': me.uid,
+          'createdAt': FieldValue.serverTimestamp(),
+          'resourceId': _resourceId,
+          'resourceCustomDocId':
+              widget.resource.customDocId.trim(),
+          'resourceTitle':
+              widget.resource.title.trim(),
+          'resourceSubject':
+              widget.resource.subject.trim(),
+          'resourcePrice': widget.resource.price,
+          'resourceUploaderId':
+              widget.resource.uploaderId.trim().isNotEmpty
+                  ? widget.resource.uploaderId.trim()
+                  : widget.resource.authorUid.trim(),
+          'resourceUploaderName':
+              widget.resource.uploaderName.trim().isNotEmpty
+                  ? widget.resource.uploaderName.trim()
+                  : widget.resource.authorName.trim(),
+        },
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Resource shared with $peerName.',
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Share resource in chat failed: $e');
+
+      if (!mounted) return;
+
+      _showError(
+        'Could not share this resource: ${e.toString()}',
+      );
     }
   }
 
@@ -917,6 +1248,11 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Share in SANSPHERE Chat',
+            onPressed: _shareResourceInChat,
+            icon: const Icon(Icons.share_rounded),
+          ),
+          IconButton(
             tooltip: _saved ? 'Remove from Saved' : 'Save Resource',
             onPressed: _savingResource ? null : _toggleSavedResource,
             icon: _savingResource
@@ -1066,8 +1402,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             _buildActionButton(),
 
             const SizedBox(height: 12),
-
-            _buildMessageSellerButton(),
 
             const SizedBox(height: 30),
           ],
@@ -1337,12 +1671,15 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     }
 
     return InkWell(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(12),
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => PublicProfileScreen(userId: uploaderUid),
+            builder: (_) => PublicProfileScreen(
+              userId: uploaderUid,
+              globalState: widget.globalState,
+            ),
           ),
         );
       },
@@ -1354,25 +1691,33 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               width: 110,
               child: Text(
                 'Uploaded by',
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontSize: 13,
+                ),
               ),
             ),
             Expanded(
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 14,
+                    radius: 17,
                     backgroundColor: const Color(0xFFEFF6FF),
-                    child: Text(
-                      displayName[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFF2563EB),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    backgroundImage: _uploaderPhotoUrl.isNotEmpty
+                        ? NetworkImage(_uploaderPhotoUrl)
+                        : null,
+                    child: _uploaderPhotoUrl.isEmpty
+                        ? Text(
+                            displayName[0].toUpperCase(),
+                            style: const TextStyle(
+                              color: Color(0xFF2563EB),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          )
+                        : null,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 9),
                   Expanded(
                     child: Text(
                       displayName,
@@ -1385,6 +1730,36 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                       ),
                     ),
                   ),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      startChatWithUser(
+                        context,
+                        peerUid: uploaderUid,
+                        peerName: displayName,
+                        docTitle: widget.resource.title,
+                        docId: _resourceId,
+                        globalState: widget.globalState,
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 16,
+                    ),
+                    label: const Text('Chat'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: const Color(0xFF2563EB),
+                      side: const BorderSide(
+                        color: Color(0xFFBFDBFE),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   const Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
@@ -1399,34 +1774,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     );
   }
 
-  Widget _buildMessageSellerButton() {
-    final sellerUid = widget.resource.uploaderId.trim().isNotEmpty
-        ? widget.resource.uploaderId.trim()
-        : widget.resource.authorUid.trim();
 
-    final sellerName = widget.resource.uploaderName.trim().isNotEmpty
-        ? widget.resource.uploaderName.trim()
-        : widget.resource.authorName.trim();
 
-    if (sellerUid.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () {
-          startChatWithUser(
-            context,
-            peerUid: sellerUid,
-            peerName: sellerName.isNotEmpty ? sellerName : 'Seller',
-            docTitle: widget.resource.title,
-            docId: _resourceId,
-          );
-        },
-        icon: const Icon(Icons.chat_bubble_outline_rounded),
-        label: const Text('Message Seller'),
-      ),
-    );
-  }
 }
